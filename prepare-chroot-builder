@@ -50,8 +50,8 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
     # Sync portage overlay
     chroot "$INSTALLDIR" /bin/bash -c "emerge-webrsync"
 
-    # Select default profile (default/linux/amd64/17.1)
-    chroot "$INSTALLDIR" /bin/bash -c "eselect profile set 16"
+    # Select default profile (default/linux/amd64/17.1/systemd)
+    chroot "$INSTALLDIR" /bin/bash -c "eselect profile set 29"
 
     # Install needed dependencies
     pkgs="fakeroot sudo"

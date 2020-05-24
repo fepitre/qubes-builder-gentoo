@@ -59,6 +59,7 @@ if ! [ -f "${INSTALLDIR}/tmp/.prepared_base" ]; then
 GENTOO_MIRRORS=${GENTOO_MIRROR}
 EMERGE_DEFAULT_OPTS="--autounmask-write y"
 ACCEPT_KEYWORDS="~amd64"
+ACCEPT_LICENSE="*"
 EOF
 
     # Preparing Portage
