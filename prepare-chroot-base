@@ -1,0 +1,73 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+### prepare-chroot-base : create a base chroot instance of Gentoo
+
+set -e
+if [ "${VERBOSE:-0}" -ge 2 -o "${DEBUG:-0}" -eq 1 ]; then
+    set -x
+fi
+
+INSTALLDIR="$1"
+DISTRO="$2"
+
+[ "x$CACHEDIR" == "x" ] && CACHEDIR="/tmp"
+
+STAGE_FLAVOR="latest-stage3-amd64-systemd"
+GENTOO_MIRROR="${GENTOO_MIRROR:-https://mirrors.kernel.org/gentoo}"
+
+BOOTSTRAP_DIR="${CACHEDIR}/bootstrap"
+STAGE_DIR="${CACHEDIR}/stage"
+PORTAGE_DIR="${CACHEDIR}/portage"
+
+if ! [ -f "${INSTALLDIR}/tmp/.prepared_base" ]; then
+    ## STAGE3
+    # Get info about latest Gentoo stage3
+    STAGE_INFO="${GENTOO_MIRROR}/releases/amd64/autobuilds/${STAGE_FLAVOR}.txt"
+    wget -q -N -P "${STAGE_DIR}" "${STAGE_INFO}"
+
+    # Extract stage3 URL and name
+    STAGE_BASEURL="${GENTOO_MIRROR}/releases/amd64/autobuilds"
+    STAGE_URL="${STAGE_BASEURL}/$(sed -n '3p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
+    STAGE_FILE="$(basename "${STAGE_URL}")"
+
+    # Download the stage3
+    echo "--> Downloading Gentoo $DISTRO stage3..."
+    wget -N -P "${STAGE_DIR}" "${STAGE_URL}"
+    wget -N -P "${STAGE_DIR}" "${STAGE_URL}.DIGESTS.asc"
+
+    # Extract the stage3
+    echo "--> Extracting Gentoo $DISTRO stage3..."
+    tar xfp "${STAGE_DIR}/${STAGE_FILE}" -C "${INSTALLDIR}"
+
+    ## PORTAGE
+    # Download latest Portage
+    echo "--> Downloading latest Portage..."
+    PORTAGE_URL="${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2"
+    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}"
+    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}.gpgsig"
+    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}.md5sum"
+
+    # Extract Portage
+    echo "--> Extracting latest Portage..."
+    tar xfp "${PORTAGE_DIR}/portage-latest.tar.bz2" -C "${INSTALLDIR}/usr"
+
+    echo "--> Configuring Portage..."
+    mkdir -p "${INSTALLDIR}/usr/portage/distfiles"
+    mkdir -p "${INSTALLDIR}/usr/portage/packages"
+    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+GENTOO_MIRRORS=${GENTOO_MIRROR}
+EMERGE_DEFAULT_OPTS="--autounmask-write y"
+ACCEPT_KEYWORDS="~amd64"
+EOF
+
+    # Preparing Portage
+    mkdir -p "${INSTALLDIR}/etc/portage/repos.conf"
+    cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
+
+    # Fix missing directory for the first emerge
+    mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
+
+    touch "${INSTALLDIR}/tmp/.prepared_base"
+fi
+

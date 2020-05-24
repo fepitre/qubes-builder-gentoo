@@ -1,0 +1,158 @@
+# Makefile for Gentoo packages build
+#
+# Variables supposed to be in component's Makefile.builder:
+#  GENTOO_BUILD_DIRS - list of gentoo directories containing build sripts
+
+### Variables required as per Makefile.generic:
+#
+#   PACKAGE_LIST - list of packages to build. Targets 'build-dep', 'package' and 'copy-out'
+#     will be run for each word on the list, with PACKAGE set to current word
+#   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
+#     CHROOT_DIR (qubes-src will be created in this directory)
+#
+PACKAGE_LIST = $(strip $(EBUILD_FILES) $(EBUILD_PACKAGES))
+DIST_BUILD_DIR = /home/user
+
+### Local variables
+RUN_AS_USER = user
+
+GENTOO_MIRROR ?= https://mirrors.kernel.org/gentoo
+
+PV ?= $(shell cat $(SRC_DIR)/$(COMPONENT)/version)
+PR ?= $(if $(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),$(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),1)
+
+EBUILD_FILE = $(PACKAGE)
+EBUILD_COMPONENT = $(basename $(notdir $(EBUILD_FILE)))
+EBUILD_PV_PR = $(EBUILD_COMPONENT)-$(PV)-r$(PR).ebuild
+
+DEBUG ?= 0
+ifneq ($(DEBUG),0)
+  $(info ╔══ DEBUG ══════════════════════════════════════════════════════════════════════)
+  $(info ║ Repo Variables)
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ SRC_DIR:               $(SRC_DIR))                # qubes-src
+  $(info ║ VERSION:               $(PV))                     # 
+  $(info ║ RELEASE:               $(PR))                     # 
+  $(info ║ CHROOT_DIR:            $(CHROOT_DIR))             # /home/user/qubes-builder/chroot-gentoo
+  $(info ║ BUILDER_REPO_DIR:      $(BUILDER_REPO_DIR))       # /home/user/qubes-builder/qubes-packages-mirror-repo/gentoo
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ Chroot Variables)
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ CHROOT_DIR:            $(CHROOT_DIR))             #
+  $(info ║ DIST_BUILD_DIR:        $(DIST_BUILD_DIR))         # /home/user
+  $(info ║ DIST_SRC:              $(DIST_SRC))               # /home/user/qubes-src/repo
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ Build Variables)
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ GENTOO_PLUGIN_DIR:     $(GENTOO_PLUGIN_DIR))      # /home/user/qubes-builder/qubes-src/builder-gentoo
+  $(info ║ CACHEDIR:              $(CACHEDIR))               # cache/gentoo
+  $(info ║ PACKAGE_LIST:          $(PACKAGE_LIST))           # gentoo
+  $(info ║ DISTRIBUTION:          $(DISTRIBUTION))           # gentoo
+  $(info ║ DIST:                  $(DIST))                   #
+  $(info ║ COMPONENT:             $(COMPONENT))              #
+  $(info ║ PACKAGE_SET:           $(PACKAGE_SET))            # vm
+  $(info ║ CHROOT_ENV:            $(CHROOT_ENV))             # BACKEND_VMM=xen
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ Repository Variables)
+  $(info ╠───────────────────────────────────────────────────────────────────────────────)
+  $(info ║ UPDATE_REPO:           $(UPDATE_REPO))            #
+  $(info ║ REPO_PROXY:            $(REPO_PROXY))             #
+  $(info ║ GENTOO_MIRROR:         $(GENTOO_MIRROR))          # https://mirrors.kernel.org/
+  $(info ╚═══════════════════════════════════════════════════════════════════════════════)
+endif
+
+### Targets required by Makefile.generic to build packages:
+
+# dist-prepare-chroot - initial preparation of chroot environment
+#   Specifically, load mounts for the build chroot
+dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
+	@echo "--> Gentoo dist-prepare-chroot (makefile):"
+	@echo "  --> Checking mounting of dev/proc/sys on build chroot..."
+	@if [ ! -r "$(CHROOT_DIR)/proc/cpuinfo" ]; then\
+		echo "    --> sudo mount -t proc proc $(CHROOT_DIR)/proc;";\
+		sudo mount -t proc proc "$(CHROOT_DIR)/proc";\
+	fi
+	@if [ ! -r "$(CHROOT_DIR)/dev/zero" ]; then\
+		echo "    --> sudo mount --bind /dev $(CHROOT_DIR)/dev;";\
+		sudo mount --rbind /dev "$(CHROOT_DIR)/dev";\
+	fi
+	@if [ ! -d "$(CHROOT_DIR)/sys/dev" ]; then\
+		echo "    --> sudo mount --bind /sys $(CHROOT_DIR)/sys;";\
+		sudo mount --bind /sys "$(CHROOT_DIR)/sys";\
+	fi
+	
+	@sudo mkdir -p "$(CACHEDIR)/distfiles"
+	@sudo touch "$(CACHEDIR)/distfiles/.mnt"
+	@if ! [ -r "$(CHROOT_DIR)/usr/portage/distfiles/.mnt" ]; then\
+		echo "    --> mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/usr/portage/distfiles";"; \
+		mkdir -p "$(CHROOT_DIR)/usr/portage/distfiles";\
+		sudo mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/usr/portage/distfiles";\
+	fi
+	
+	@sudo mkdir -p "$(CACHEDIR)/packages"
+	@sudo touch "$(CACHEDIR)/packages/.mnt"
+	@if ! [ -r "$(CHROOT_DIR)/usr/portage/packages/.mnt" ]; then\
+		echo "    --> mount --bind "${CACHEDIR}/packages" "${CHROOT_DIR}/usr/portage/packages";"; \
+		mkdir -p "$(CHROOT_DIR)/usr/portage/packages";\
+		sudo mount --bind "${CACHEDIR}/packages" "${CHROOT_DIR}/usr/portage/packages";\
+	fi
+	
+	@mkdir -p "$(BUILDER_REPO_DIR)"
+	@sudo touch "$(BUILDER_REPO_DIR)/.mnt"
+	@if ! [ -r "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/.mnt" ]; then\
+		echo "    --> sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";"; \
+		mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
+		sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
+		sudo mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/sources";\
+		sudo cp -r "$(CHROOT_DIR)/var/db/repos/qubes/profiles" "$(CHROOT_DIR)/var/db/repos/qubes/metadata" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/sources/";\
+	fi
+	
+	@echo "  --> Synchronize resolv.conf, in case it changed since last run..."
+	@sudo cp /etc/resolv.conf "$(CHROOT_DIR)/etc/resolv.conf"
+
+# Create the build chroot, if it does not already exist
+$(CHROOT_DIR)/home/user/.prepared_base: $(GENTOO_PLUGIN_DIR)/prepare-chroot-builder
+	@echo "--> Gentoo preparing build chroot environment"
+	@sudo -E "$(GENTOO_PLUGIN_DIR)/prepare-chroot-builder" "$(CHROOT_DIR)" $(DIST) || exit 1
+	@touch $(CHROOT_DIR)/home/user/.prepared_base
+
+# dist-prep - some preparation of sources (if needed)
+dist-prep:
+	@true
+
+# dist-build-dep - install build dependencies (should operate on chroot directory)
+dist-build-dep:
+	@echo "--> Gentoo dist-build-dep (makefile)"
+	@sudo -E "$(GENTOO_PLUGIN_DIR)/update-local-repo.sh" $(DIST)
+
+# dist-package - compile package (should operate on chroot directory)
+dist-package:
+	@echo "--> Gentoo dist-package (makefile)"
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	@echo "  --> Preparing package in $(DIST_SRC)"
+	mkdir -p $(CHROOT_DIR)/$(DIST_BUILD_DIR)/portage/app-emulation/
+	mkdir -p $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/files;
+	if [ -r "$(CHROOT_DIR)/$(DIST_SRC)/series-vm.conf" ]; then \
+		i=1; while read -r patch; do \
+			cp $(CHROOT_DIR)/$(DIST_SRC)/$$patch $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/files/$$i-`basename $$patch`; \
+			(( i = i + 1 )); \
+		done < $(CHROOT_DIR)/$(DIST_SRC)/series-vm.conf; \
+	fi
+	cp $(CHROOT_DIR)/$(DIST_SRC)/$(EBUILD_FILE) $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/$(EBUILD_PV_PR); \
+	rm -rf $(CHROOT_DIR)/$(DIST_BUILD_DIR)/portage/app-emulation/$(EBUILD_COMPONENT); \
+	sudo cp -r $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation $(CHROOT_DIR)/var/db/repos/qubes/; \
+	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c \
+		'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && \
+			sudo ebuild $(EBUILD_PV_PR) manifest clean && \
+			sudo emerge --onlydeps app-emulation/$(EBUILD_COMPONENT) && \
+			sudo emerge --buildpkgonly app-emulation/$(EBUILD_COMPONENT)'
+
+# dist-copy-out - copy compiled package out of chroot env; this target should
+#     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
+#     BUILDER_REPO_DIR
+dist-copy-out:
+	@echo "--> Gentoo dist-copy-out (makefile)"
+	@echo "--> Done:" >&3
+

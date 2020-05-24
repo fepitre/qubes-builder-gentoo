@@ -1,0 +1,77 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+### prepare-chroot-builder : create a builder chroot instance of Gentoo
+
+set -e
+if [ "${VERBOSE:-0}" -ge 2 ] || [ "${DEBUG:-0}" -eq 1 ]; then
+    set -x
+fi
+
+PLUGINDIR="$(dirname $0)"
+INSTALLDIR="$1"
+DISTRO="$2"
+
+SCRIPTSDIR=${GENTOO_PLUGINDIR}scripts
+export INSTALLDIR SCRIPTSDIR
+
+#~ PORTAGE_CACHEDIR="${CACHEDIR}/portage"
+#~ export PORTAGE_CACHEDIR
+
+if ! [ -d "${INSTALLDIR}/home/user" ]; then
+    mkdir -p "$INSTALLDIR"
+
+    "${PLUGINDIR}/prepare-chroot-base" "$INSTALLDIR" "$DISTRO"
+
+    [ -n "$SUDO_UID" ] && USER_OPTS="-u ${SUDO_UID}"
+    [ -n "$USER_UID" ] && USER_OPTS="-u ${USER_UID}"
+    if [ -n "$USER_GID" ]; then
+        chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$USER_GID" user
+    elif [ -n "$SUDO_GID" ]; then
+        chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$SUDO_GID" user
+    else
+        chroot "$INSTALLDIR" /usr/sbin/groupadd user
+    fi
+    chroot "$INSTALLDIR" /bin/bash -c \
+        "useradd -g user -G wheel $USER_OPTS -m user; su -c 'mkdir qubes-src' - user"
+
+    if ! [ -r "${INSTALLDIR}/proc/cpuinfo" ]; then
+        mount -t proc proc "${INSTALLDIR}/proc"
+    fi
+    
+    cp /etc/resolv.conf "${INSTALLDIR}/etc/resolv.conf"
+    
+    mkdir -p "${CACHEDIR}/distfiles"
+    mkdir -p "${CACHEDIR}/packages"
+    
+    mount --bind "${CACHEDIR}/distfiles" "${INSTALLDIR}/usr/portage/distfiles"
+    mount --bind "${CACHEDIR}/packages" "${INSTALLDIR}/usr/portage/packages"
+
+    # Sync portage overlay
+    chroot "$INSTALLDIR" /bin/bash -c "emerge-webrsync"
+
+    # Select default profile (default/linux/amd64/17.1)
+    chroot "$INSTALLDIR" /bin/bash -c "eselect profile set 16"
+
+    # Install needed dependencies
+    pkgs="fakeroot sudo"
+    chroot "$INSTALLDIR" /bin/bash -c "emerge -b -k $pkgs"
+
+    cat > "${INSTALLDIR}/etc/sudoers.d/qubes-builder-user" <<EOF
+%wheel ALL=(ALL) NOPASSWD: ALL
+EOF
+ 
+    # Qubes's Gentoo repository (overlay)
+    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/metadata"
+    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/profiles"
+    echo 'masters = gentoo' > "${INSTALLDIR}/var/db/repos/qubes/metadata/layout.conf"
+    echo 'qubes' > "${INSTALLDIR}/var/db/repos/qubes/profiles/repo_name"
+    cat > "${INSTALLDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
+[qubes]
+location = /var/db/repos/qubes
+auto-sync = no
+EOF
+
+	# Fix permissions
+	chown -hR user:user "${INSTALLDIR}/home/user/"
+fi
