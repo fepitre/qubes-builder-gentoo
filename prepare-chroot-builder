@@ -74,4 +74,12 @@ EOF
 
 	# Fix permissions
 	chown -hR user:user "${INSTALLDIR}/home/user/"
+
+    # Disable py2.7 without altering the other flags
+    cat > "${INSTALLDIR}/etc/portage/package.use/python27" << EOF
+*/* PYTHON_TARGETS: -python2_7
+EOF
+
+    # Update system
+    chroot "$INSTALLDIR" /bin/bash -c "emerge --changed-use --deep @world"
 fi
