@@ -1,0 +1,3 @@
+>=media-libs/libglvnd-1.3.2 X
+>=media-plugins/alsa-plugins-1.2.2 pulseaudio
+>=app-text/xmlto-0.0.28-r2 text

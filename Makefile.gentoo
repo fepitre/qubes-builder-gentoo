@@ -18,7 +18,7 @@ RUN_AS_USER = user
 
 GENTOO_MIRROR ?= https://mirrors.kernel.org/gentoo
 
-PV ?= $(shell cat $(SRC_DIR)/$(COMPONENT)/version)
+PV ?= $(shell cat $(SRC_DIR)/$(COMPONENT)/version 2>/dev/null)
 PR ?= $(if $(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),$(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),1)
 
 EBUILD_FILE = $(PACKAGE)
@@ -34,7 +34,7 @@ ifneq ($(DEBUG),0)
   $(info ║ VERSION:               $(PV))                     # 
   $(info ║ RELEASE:               $(PR))                     # 
   $(info ║ CHROOT_DIR:            $(CHROOT_DIR))             # /home/user/qubes-builder/chroot-gentoo
-  $(info ║ BUILDER_REPO_DIR:      $(BUILDER_REPO_DIR))       # /home/user/qubes-builder/qubes-packages-mirror-repo/gentoo
+  $(info ║ BUILDER_REPO_DIR:      $(BUILDER_REPO_DIR))       # /home/user/qubes-builder/qubes-packages-mirror-repo/vm-gentoo
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
   $(info ║ Chroot Variables)
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
@@ -68,46 +68,46 @@ endif
 dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@echo "--> Gentoo dist-prepare-chroot (makefile):"
 	@echo "  --> Checking mounting of dev/proc/sys on build chroot..."
-	@if [ ! -r "$(CHROOT_DIR)/proc/cpuinfo" ]; then\
-		echo "    --> sudo mount -t proc proc $(CHROOT_DIR)/proc;";\
-		sudo mount -t proc proc "$(CHROOT_DIR)/proc";\
-	fi
 	@if [ ! -r "$(CHROOT_DIR)/dev/zero" ]; then\
 		echo "    --> sudo mount --bind /dev $(CHROOT_DIR)/dev;";\
 		sudo mount --rbind /dev "$(CHROOT_DIR)/dev";\
 	fi
+	@if [ ! -r "$(CHROOT_DIR)/proc/cpuinfo" ]; then\
+		echo "    --> sudo mount -t proc proc $(CHROOT_DIR)/proc;";\
+		mkdir -p "$(CHROOT_DIR)/proc; \
+		sudo mount -t proc proc "$(CHROOT_DIR)/proc";\
+	fi
 	@if [ ! -d "$(CHROOT_DIR)/sys/dev" ]; then\
 		echo "    --> sudo mount --bind /sys $(CHROOT_DIR)/sys;";\
+		mkdir -p "$(CHROOT_DIR)/sys;\
 		sudo mount --bind /sys "$(CHROOT_DIR)/sys";\
 	fi
 	
 	@sudo mkdir -p "$(CACHEDIR)/distfiles"
 	@sudo touch "$(CACHEDIR)/distfiles/.mnt"
-	@if ! [ -r "$(CHROOT_DIR)/usr/portage/distfiles/.mnt" ]; then\
-		echo "    --> mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/usr/portage/distfiles";"; \
-		mkdir -p "$(CHROOT_DIR)/usr/portage/distfiles";\
-		sudo mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/usr/portage/distfiles";\
+	@if ! [ -r "$(CHROOT_DIR)/var/cache/distfiles/.mnt" ]; then\
+		echo "    --> mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";"; \
+		mkdir -p "$(CHROOT_DIR)/var/cache/distfiles";\
+		sudo mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";\
 	fi
 	
-	@sudo mkdir -p "$(CACHEDIR)/packages"
-	@sudo touch "$(CACHEDIR)/packages/.mnt"
-	@if ! [ -r "$(CHROOT_DIR)/usr/portage/packages/.mnt" ]; then\
-		echo "    --> mount --bind "${CACHEDIR}/packages" "${CHROOT_DIR}/usr/portage/packages";"; \
-		mkdir -p "$(CHROOT_DIR)/usr/portage/packages";\
-		sudo mount --bind "${CACHEDIR}/packages" "${CHROOT_DIR}/usr/portage/packages";\
+	@sudo mkdir -p "$(CACHEDIR)/binpkgs"
+	@sudo touch "$(CACHEDIR)/binpkgs/.mnt"
+	@if ! [ -r "$(CHROOT_DIR)/var/cache/binpkgs/.mnt" ]; then\
+		echo "    --> mount --bind "${CACHEDIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs/";"; \
+		mkdir -p "$(CHROOT_DIR)/var/cache/binpkgs";\
+		sudo mount --bind "${CACHEDIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs";\
 	fi
 	
 	@mkdir -p "$(BUILDER_REPO_DIR)"
 	@sudo touch "$(BUILDER_REPO_DIR)/.mnt"
-	@if ! [ -r "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/.mnt" ]; then\
-		echo "    --> sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";"; \
-		mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
-		sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
-		sudo mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/sources";\
-		sudo cp -r "$(CHROOT_DIR)/var/db/repos/qubes/profiles" "$(CHROOT_DIR)/var/db/repos/qubes/metadata" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/sources/";\
+	@if ! [ -r "$(CHROOT_DIR)/var/db/repos/qubes/.mnt" ]; then\
+		echo "    --> mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/var/db/repos/qubes";"; \
+		mkdir -p "$(CHROOT_DIR)/var/db/repos/qubes";\
+		sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/var/db/repos/qubes";\
 	fi
 	
-	@echo "  --> Synchronize resolv.conf, in case it changed since last run..."
+	@echo "  --> Synchronize resolv.conf"
 	@sudo cp /etc/resolv.conf "$(CHROOT_DIR)/etc/resolv.conf"
 
 # Create the build chroot, if it does not already exist
@@ -132,8 +132,10 @@ ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
 	@echo "  --> Preparing package in $(DIST_SRC)"
-	mkdir -p $(CHROOT_DIR)/$(DIST_BUILD_DIR)/portage/app-emulation/
 	mkdir -p $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/files;
+	if [ -d $(CHROOT_DIR)/$(DIST_SRC)/$(dir $(EBUILD_FILE))/files ]; then \
+		cp -r $(CHROOT_DIR)/$(DIST_SRC)/$(dir $(EBUILD_FILE))/files/* $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/files/; \
+	fi
 	if [ -r "$(CHROOT_DIR)/$(DIST_SRC)/series-vm.conf" ]; then \
 		i=1; while read -r patch; do \
 			cp $(CHROOT_DIR)/$(DIST_SRC)/$$patch $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/files/$$i-`basename $$patch`; \
@@ -141,13 +143,12 @@ endif
 		done < $(CHROOT_DIR)/$(DIST_SRC)/series-vm.conf; \
 	fi
 	cp $(CHROOT_DIR)/$(DIST_SRC)/$(EBUILD_FILE) $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/$(EBUILD_PV_PR); \
-	rm -rf $(CHROOT_DIR)/$(DIST_BUILD_DIR)/portage/app-emulation/$(EBUILD_COMPONENT); \
-	sudo cp -r $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation $(CHROOT_DIR)/var/db/repos/qubes/; \
-	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c \
-		'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && \
-			sudo ebuild $(EBUILD_PV_PR) manifest clean && \
-			sudo emerge --onlydeps app-emulation/$(EBUILD_COMPONENT) && \
-			sudo emerge --buildpkgonly app-emulation/$(EBUILD_COMPONENT)'
+	sudo cp -r $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation $(CHROOT_DIR)/var/db/repos/qubes/
+	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c 'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && sudo ebuild $(EBUILD_PV_PR) manifest clean'
+	
+	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c 'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && \
+		sudo emerge --onlydeps app-emulation/$(EBUILD_COMPONENT) && \
+		sudo emerge --buildpkgonly app-emulation/$(EBUILD_COMPONENT)'
 
 # dist-copy-out - copy compiled package out of chroot env; this target should
 #     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
@@ -156,3 +157,12 @@ dist-copy-out:
 	@echo "--> Gentoo dist-copy-out (makefile)"
 	@echo "--> Done:" >&3
 
+# Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
+# requested repository (UPDATE_REPO)
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+	rm -rf $(UPDATE_REPO)/pkgs/
+	mkdir -p $(UPDATE_REPO)/pkgs
+	cp -ap $(BUILDER_REPO_DIR)/* $(UPDATE_REPO)/pkgs/

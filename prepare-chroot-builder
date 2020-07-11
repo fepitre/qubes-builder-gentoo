@@ -8,20 +8,16 @@ if [ "${VERBOSE:-0}" -ge 2 ] || [ "${DEBUG:-0}" -eq 1 ]; then
     set -x
 fi
 
-PLUGINDIR="$(dirname $0)"
 INSTALLDIR="$1"
 DISTRO="$2"
 
-SCRIPTSDIR=${GENTOO_PLUGINDIR}scripts
+SCRIPTSDIR=${GENTOO_PLUGIN_DIR}scripts
 export INSTALLDIR SCRIPTSDIR
-
-#~ PORTAGE_CACHEDIR="${CACHEDIR}/portage"
-#~ export PORTAGE_CACHEDIR
 
 if ! [ -d "${INSTALLDIR}/home/user" ]; then
     mkdir -p "$INSTALLDIR"
 
-    "${PLUGINDIR}/prepare-chroot-base" "$INSTALLDIR" "$DISTRO"
+    "${GENTOO_PLUGIN_DIR}/prepare-chroot-base" "$INSTALLDIR" "$DISTRO"
 
     [ -n "$SUDO_UID" ] && USER_OPTS="-u ${SUDO_UID}"
     [ -n "$USER_UID" ] && USER_OPTS="-u ${USER_UID}"
@@ -35,51 +31,9 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
     chroot "$INSTALLDIR" /bin/bash -c \
         "useradd -g user -G wheel $USER_OPTS -m user; su -c 'mkdir qubes-src' - user"
 
-    if ! [ -r "${INSTALLDIR}/proc/cpuinfo" ]; then
-        mount -t proc proc "${INSTALLDIR}/proc"
-    fi
-    
-    cp /etc/resolv.conf "${INSTALLDIR}/etc/resolv.conf"
-    
-    mkdir -p "${CACHEDIR}/distfiles"
-    mkdir -p "${CACHEDIR}/packages"
-    
-    mount --bind "${CACHEDIR}/distfiles" "${INSTALLDIR}/usr/portage/distfiles"
-    mount --bind "${CACHEDIR}/packages" "${INSTALLDIR}/usr/portage/packages"
-
-    # Sync portage overlay
-    chroot "$INSTALLDIR" /bin/bash -c "emerge-webrsync"
-
-    # Select default profile (default/linux/amd64/17.1/systemd)
-    chroot "$INSTALLDIR" /bin/bash -c "eselect profile set 29"
-
-    # Install needed dependencies
-    pkgs="fakeroot sudo"
-    chroot "$INSTALLDIR" /bin/bash -c "emerge -b -k $pkgs"
-
     cat > "${INSTALLDIR}/etc/sudoers.d/qubes-builder-user" <<EOF
 %wheel ALL=(ALL) NOPASSWD: ALL
 EOF
- 
-    # Qubes's Gentoo repository (overlay)
-    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/metadata"
-    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/profiles"
-    echo 'masters = gentoo' > "${INSTALLDIR}/var/db/repos/qubes/metadata/layout.conf"
-    echo 'qubes' > "${INSTALLDIR}/var/db/repos/qubes/profiles/repo_name"
-    cat > "${INSTALLDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
-[qubes]
-location = /var/db/repos/qubes
-auto-sync = no
-EOF
 
-	# Fix permissions
-	chown -hR user:user "${INSTALLDIR}/home/user/"
-
-    # Disable py2.7 without altering the other flags
-    cat > "${INSTALLDIR}/etc/portage/package.use/python27" << EOF
-*/* PYTHON_TARGETS: -python2_7
-EOF
-
-    # Update system
-    chroot "$INSTALLDIR" /bin/bash -c "emerge --changed-use --deep @world"
+    mountBuilderOverlay "${BUILDER_REPO_DIR}" "${INSTALLDIR}"
 fi
