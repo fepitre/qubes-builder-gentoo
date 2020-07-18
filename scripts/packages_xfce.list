@@ -14,6 +14,9 @@ sys-apps/ethtool
 www-client/firefox
 mail-client/thunderbird
 
-# Gnome
-media-fonts/cantarell
-gnome-base/gnome-light
+# XFCE
+x11-themes/adwaita-icon-theme
+x11-themes/gnome-themes-standard
+x11-terms/xfce4-terminal
+xfce-base/thunar
+xfce-base/xfce4-settings

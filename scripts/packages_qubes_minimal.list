@@ -4,4 +4,3 @@ app-emulation/qubes-db
 app-emulation/qubes-utils
 app-emulation/qubes-core-agent-linux
 app-emulation/qubes-gui-agent
-app-emulation/qubes-gpg-split

@@ -14,6 +14,9 @@ DISTRO="$2"
 SCRIPTSDIR=${GENTOO_PLUGIN_DIR}scripts
 export INSTALLDIR SCRIPTSDIR
 
+# shellcheck source=scripts/distribution.sh
+. ${SCRIPTSDIR}/distribution.sh
+
 if ! [ -d "${INSTALLDIR}/home/user" ]; then
     mkdir -p "$INSTALLDIR"
 
@@ -35,5 +38,21 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
 %wheel ALL=(ALL) NOPASSWD: ALL
 EOF
 
-    mountBuilderOverlay "${BUILDER_REPO_DIR}" "${INSTALLDIR}"
+    if ! [ -r "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo/.mnt ]; then
+        mkdir -p "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo
+        mount --bind "${BUILDER_REPO_DIR}" "${INSTALLDIR}/tmp/qubes-packages-mirror-repo"
+    fi
+
+    # builder-local overlay
+    mkdir -p "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/metadata"
+    mkdir -p "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/profiles"
+    echo 'masters = gentoo' > "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/metadata/layout.conf"
+    echo 'builder-local' > "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/profiles/repo_name"
+
+    cat > "${INSTALLDIR}/etc/portage/repos.conf/builder-local.conf" <<EOF
+[builder-local]
+location = /tmp/qubes-packages-mirror-repo
+auto-sync = no
+EOF
+
 fi

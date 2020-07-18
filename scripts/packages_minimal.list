@@ -9,11 +9,4 @@ dev-vcs/git
 net-misc/wget
 sys-apps/diffutils
 sys-apps/ethtool
-
-# Applications
-www-client/firefox
-mail-client/thunderbird
-
-# Gnome
-media-fonts/cantarell
-gnome-base/gnome-light
+sys-apps/net-tools

@@ -13,6 +13,9 @@ DISTRO="$2"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 
+GPG_KEYRING="$(readlink -f ${CACHEDIR}/gentoo-trustedkeys.gpg)"
+GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
+
 # shellcheck source=scripts/distribution.sh
 . ${SCRIPTSDIR}/distribution.sh
 
@@ -23,47 +26,79 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     STAGE_DIR="${CACHEDIR}/stage"
     PORTAGE_DIR="${CACHEDIR}/portage"
 
+    echo "  --> Importing Gentoo keys..."
+    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-linux-release-engineering.asc"
+    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-ebuild-repository-signing-key.asc"
+
     ## STAGE3
-    # Get info about latest Gentoo stage3
-    STAGE_INFO="${GENTOO_MIRROR}/releases/amd64/autobuilds/${STAGE_FLAVOR}.txt"
-    wget -q -N -P "${STAGE_DIR}" "${STAGE_INFO}"
+    if ! [ -f "${INSTALLDIR}/etc/.extracted_stage3" ]; then
+        # Get info about latest Gentoo stage3
+        STAGE_INFO="${GENTOO_MIRROR}/releases/amd64/autobuilds/${STAGE_FLAVOR}.txt"
+        wget -q -N -P "${STAGE_DIR}" "${STAGE_INFO}"
 
-    # Extract stage3 URL and name
-    STAGE_BASEURL="${GENTOO_MIRROR}/releases/amd64/autobuilds"
-    STAGE_URL="${STAGE_BASEURL}/$(sed -n '3p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
-    STAGE_FILE="$(basename "${STAGE_URL}")"
+        # Extract stage3 URL and name
+        STAGE_BASEURL="${GENTOO_MIRROR}/releases/amd64/autobuilds"
+        STAGE_URL="${STAGE_BASEURL}/$(sed -n '3p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
+        STAGE_FILE="$(basename "${STAGE_URL}")"
 
-    # Download the stage3
-    echo "  --> Downloading Gentoo $DISTRO stage3..."
-    wget -N -P "${STAGE_DIR}" "${STAGE_URL}"
-    wget -N -P "${STAGE_DIR}" "${STAGE_URL}.DIGESTS.asc"
+        # Download the stage3
+        echo "  --> Downloading Gentoo $DISTRO stage3..."
+        wget -N -P "${STAGE_DIR}" "${STAGE_URL}"{,.DIGESTS.asc}
 
-    # Extract the stage3
-    echo "  --> Extracting Gentoo $DISTRO stage3..."
-    tar xfp "${STAGE_DIR}/${STAGE_FILE}" -C "${INSTALLDIR}"
+        echo "  --> Verifying Gentoo $DISTRO stage3..."
+        pushd "$STAGE_DIR" || exit 1
+        if ! gpg $GPG_OPTS --verify "$STAGE_FILE.DIGESTS.asc"; then
+            echo "    --> Wrong signature for $STAGE_FILE"
+            exit 1
+        fi
+        if ! awk '/SHA512 HASH/{getline;print}' "$STAGE_FILE.DIGESTS.asc" | sed '/CONTENTS/d' | sha512sum -c; then
+            echo "    --> Wrong checksum for $STAGE_FILE"
+            exit 1
+        fi
+        popd
+
+        # Extract the stage3
+        echo "  --> Extracting Gentoo $DISTRO stage3..."
+        tar Jxfp "${STAGE_DIR}/${STAGE_FILE}" -C "${INSTALLDIR}" --xattrs-include='*.*' --numeric-owner
+
+        touch "${INSTALLDIR}/etc/.extracted_stage3"
+    fi
 
     ## PORTAGE
-    # Download latest Portage
-    echo "  --> Downloading latest Portage..."
-    PORTAGE_URL="${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2"
-    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}"
-    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}.gpgsig"
-    wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}.md5sum"
+    if ! [ -f "${INSTALLDIR}/etc/.extracted_portage" ]; then
+        # Download latest Portage
+        echo "  --> Downloading latest Portage..."
+        PORTAGE_URL="${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2"
+        wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}"{,.gpgsig,.md5sum}
 
-    # Extract Portage
-    echo "  --> Extracting latest Portage..."
-    tar xfp "${PORTAGE_DIR}/portage-latest.tar.bz2" -C "${INSTALLDIR}/usr"
+        echo "  --> Verifying latest Portage..."
+        pushd "$PORTAGE_DIR" || exit 1
+        if ! gpg $GPG_OPTS --verify portage-latest.tar.bz2.gpgsig portage-latest.tar.bz2; then
+            echo "    --> Wrong signature for portage-latest.tar.bz2"
+            exit 1
+        fi
+        if ! md5sum -c portage-latest.tar.bz2.md5sum; then
+            echo "    --> Wrong checksum for portage-latest.tar.bz2"
+            exit 1
+        fi
+        popd
 
-    # Configure Portage
-    echo "  --> Configuring Portage..."
-    mkdir -p "${INSTALLDIR}/usr/portage/distfiles"
-    mkdir -p "${INSTALLDIR}/usr/portage/packages"
-    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+        # Extract Portage
+        echo "  --> Extracting latest Portage..."
+        tar xfp "${PORTAGE_DIR}/portage-latest.tar.bz2" -C "${INSTALLDIR}/usr"
+
+        # Configure Portage
+        echo "  --> Configuring Portage..."
+        mkdir -p "${INSTALLDIR}/usr/portage/distfiles"
+        mkdir -p "${INSTALLDIR}/usr/portage/packages"
+        cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
 GENTOO_MIRRORS=${GENTOO_MIRROR}
-EMERGE_DEFAULT_OPTS="--autounmask-write y"
+FEATURES="buildpkg"
 ACCEPT_KEYWORDS="~amd64"
 ACCEPT_LICENSE="*"
 EOF
+        touch "${INSTALLDIR}/etc/.extracted_portage"
+    fi
 
     mkdir -p "${INSTALLDIR}/etc/portage/repos.conf"
     cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
@@ -71,43 +106,20 @@ EOF
     # Fix missing directory for the first emerge
     mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
 
-    # # Prepare /dev nodes
-    # mkdir -p "${INSTALLDIR}/dev/"
-    # for f in null urandom zero random console; do
-    #     cp -a /dev/$f "${INSTALLDIR}/dev/"
-    # done
-
-    # # Create loop devices as much as Mock does
-    # if [ ! -e "${INSTALLDIR}/dev/loop-control" ]; then
-    #     mknod -m 0666 "${INSTALLDIR}/dev/loop-control" c 10 237
-    # fi
-
-    # for i in $(seq 0 4)
-    # do
-    #     mknod -m 0666 "${INSTALLDIR}/dev/loop$i" b 7 "$i"
-    # done
-
     prepareChroot "${INSTALLDIR}"
     mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
     # Sync portage overlay
-    chroot "${INSTALLDIR}" /bin/bash -l -c "emerge-webrsync"
+    chrootCmd "${INSTALLDIR}" "emerge-webrsync"
 
-    # Select default profile (default/linux/amd64/17.1/systemd)
-    chroot "${INSTALLDIR}" /bin/bash -l -c "eselect profile set 29"
+    # Select default systemd profile
+    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/systemd"
 
-    # Disable py2.7 without altering the other flags
-    cat > "${INSTALLDIR}/etc/portage/package.use/python27" << EOF
-*/* PYTHON_TARGETS: -python2_7
-EOF
+    updateChroot "${INSTALLDIR}"
 
     # Install needed dependencies
-    pkgs="fakeroot sudo"
-    chroot "${INSTALLDIR}" /bin/bash -l -c "emerge -b -k $pkgs"
-
-    # Update system
-    chroot "${INSTALLDIR}" /bin/bash -l -c "emerge --changed-use --deep @world"
+    pkgs="fakeroot sudo lsb-release"
+    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} -n $pkgs"
 
     touch "${INSTALLDIR}/etc/.prepared_base"
 fi
-

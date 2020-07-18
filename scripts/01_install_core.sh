@@ -7,7 +7,4 @@ if [ "$VERBOSE" -ge 2 ] || [ "$DEBUG" -gt 0 ]; then
     set -x
 fi
 
-if ! [ -f "${INSTALLDIR}/etc/.template_stage1" ]; then
-    "${SCRIPTSDIR}/../prepare-chroot-base" "$INSTALLDIR" "$DIST"
-    touch "${INSTALLDIR}/etc/.template_stage1"
-fi
+"${SCRIPTSDIR}/../prepare-chroot-base" "$INSTALLDIR" "$DIST"

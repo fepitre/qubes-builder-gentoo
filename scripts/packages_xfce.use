@@ -6,7 +6,9 @@ app-emulation/xen-tools -api -debug -doc -flask -hvm -ipxe -ocaml -ovmf -pam -py
 
 # required by Gnome related packages
 */* ruby_targets_ruby27
-gnome-base/gnome-light -gnome-shell
+
+# required by Firefox
+>=media-libs/libvpx-1.8.2 postproc
 
 # required by Thunderbird
 >=dev-db/sqlite-3.32.3 secure-delete

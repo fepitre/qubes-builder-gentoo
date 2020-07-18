@@ -7,22 +7,32 @@ if [ "$VERBOSE" -ge 2 ] || [ "$DEBUG" -gt 0 ]; then
     set -x
 fi
 
-if ! [ -f "${INSTALLDIR}/etc/.template_stage2" ]; then
-    # shellcheck source=scripts/distribution.sh
-    . ${SCRIPTSDIR}/distribution.sh
+# shellcheck source=scripts/distribution.sh
+. ${SCRIPTSDIR}/distribution.sh
 
-    prepareChroot "${INSTALLDIR}"
-    mountCache "${CACHEDIR}" "${INSTALLDIR}"
+prepareChroot "${INSTALLDIR}"
+mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
-    # Standard Gentoo packages to install
-    PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
+if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE_FLAVOR" == "gnome" ]; then
+    # Select desktop/gnome/systemd profile
+    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
+fi
 
-    # Standard Gentoo USE flags
-    cp "$(getBaseUseFlags)" "${INSTALLDIR}/etc/portage/package.use/qubes-standard"
+# Standard Gentoo USE flags
+cp "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/standard"
 
+updateChroot "${INSTALLDIR}"
+
+# Fix https://bugs.gentoo.org/733302
+if [ "$TEMPLATE_FLAVOR" != "minimal" ]; then
+    chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} media-libs/libcanberra"
+fi
+
+# Standard Gentoo packages to install
+PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
+
+if [ -n "${PACKAGES}" ]; then
     echo "  --> Installing Gentoo packages..."
     echo "    --> Selected packages: ${PACKAGES}"
-    chroot "${INSTALLDIR}" /bin/bash -l -c "emerge -b -k ${PACKAGES}"
-
-    touch "${INSTALLDIR}/etc/.template_stage2"
+    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} -n ${PACKAGES}"
 fi

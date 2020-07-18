@@ -7,11 +7,21 @@ if [ "$VERBOSE" -ge 2 ] || [ "$DEBUG" -gt 0 ]; then
     set -x
 fi
 
-echo " --> Cleaning..."
-rm -f "${INSTALLDIR}/etc/resolv.conf"
-rm -f "${INSTALLDIR}/etc/.template_stage*"
+# shellcheck source=scripts/distribution.sh
+. ${SCRIPTSDIR}/distribution.sh
 
-umount "${INSTALLDIR}/var/cache/binpkgs"
-umount "${INSTALLDIR}/var/cache/distfiles"
-umount "${INSTALLDIR}/var/db/repos/qubes"
-rm "${INSTALLDIR}/etc/portage/repos.conf/qubes.conf"
+echo " --> Cleaning..."
+echo '# This file intentionally left blank' > "${INSTALLDIR}/etc/resolv.conf"
+
+rm -f "${INSTALLDIR}/etc/.prepared_base"
+rm -f "${INSTALLDIR}/etc/.extracted_stage3"
+rm -f "${INSTALLDIR}/etc/.extracted_portage"
+
+umount "${INSTALLDIR}/var/cache/binpkgs" || true
+umount "${INSTALLDIR}/var/cache/distfiles" || true
+
+echo " --> Fix permissions"
+chrootCmd "${INSTALLDIR}" 'chmod 755 /var/cache/binpkgs'
+chrootCmd "${INSTALLDIR}" 'chmod 755 /var/cache/distfiles'
+chrootCmd "${INSTALLDIR}" 'chown portage:portage /var/cache/binpkgs'
+chrootCmd "${INSTALLDIR}" 'chown portage:portage /var/cache/distfiles'

@@ -1,53 +1,77 @@
 #!/bin/bash
 
+EMERGE_FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
+EMERGE_OPTS="-b -k --keep-going=y"
+
 prepareChroot() {
-    INSTALLDIR="$1"
+    CHROOTDIR="$1"
 
-    if [ ! -r "${INSTALLDIR}/dev/zero" ]; then
-        mkdir -p "${INSTALLDIR}/dev"
-        sudo mount --rbind /dev "${INSTALLDIR}/dev"
+    if [ ! -r "${CHROOTDIR}/dev/zero" ]; then
+        mkdir -p "${CHROOTDIR}/dev"
+        sudo mount --rbind /dev "${CHROOTDIR}/dev"
     fi
-    if [ ! -r "${INSTALLDIR}/proc/cpuinfo" ]; then
-        mkdir -p "${INSTALLDIR}/proc"
-        sudo mount -t proc proc "${INSTALLDIR}/proc"
+    if [ "$(stat -f -c '%T' ${CHROOTDIR}/dev/shm 2>/dev/null)" != "tmpfs" ]; then
+        mkdir -p "${CHROOTDIR}/dev/shm"
+        sudo mount -t tmpfs shm "${CHROOTDIR}/dev/shm"
+        sudo chmod 1777 "${CHROOTDIR}/dev/shm"
     fi
-    if [ ! -d "${INSTALLDIR}/sys/dev" ]; then\
-        mkdir -p "${INSTALLDIR}/sys"
-        sudo mount --bind /sys "${INSTALLDIR}/sys"
+    if [ ! -r "${CHROOTDIR}/proc/cpuinfo" ]; then
+        mkdir -p "${CHROOTDIR}/proc"
+        sudo mount -t proc proc "${CHROOTDIR}/proc"
     fi
+    if [ ! -d "${CHROOTDIR}/sys/dev" ]; then\
+        mkdir -p "${CHROOTDIR}/sys"
+        sudo mount --bind /sys "${CHROOTDIR}/sys"
+    fi
+    cp /etc/resolv.conf "${CHROOTDIR}/etc/resolv.conf"
+}
 
-    cp /etc/resolv.conf "${INSTALLDIR}/etc/resolv.conf"
+chrootCmd() {
+    CHROOTDIR="$1"
+    shift
+    CMD="$*"
+
+    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "rm -f /etc/ld.so.cache && ldconfig && env-update"
+    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
+}
+
+updateChroot() {
+    CHROOTDIR="$1"
+
+    chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
 mountCache() {
     CACHEDIR="$1"
-    INSTALLDIR="$2"
+    CHROOTDIR="$2"
 
     mkdir -p "${CACHEDIR}/distfiles"
     mkdir -p "${CACHEDIR}/binpkgs"
 
-    mount --bind "${CACHEDIR}/distfiles" "${INSTALLDIR}/var/cache/distfiles"
-    mount --bind "${CACHEDIR}/binpkgs" "${INSTALLDIR}/var/cache/binpkgs"
+    mount --bind "${CACHEDIR}/distfiles" "${CHROOTDIR}/var/cache/distfiles"
+    mount --bind "${CACHEDIR}/binpkgs" "${CHROOTDIR}/var/cache/binpkgs"
 }
 
-mountBuilderOverlay() {
-    LOCALREPO="$1"
-
-    mkdir -p "${INSTALLDIR}/var/db/repos/qubes"
-    mount --bind "${LOCALREPO}" "${INSTALLDIR}/var/db/repos/qubes"
-
-    # Create/update builder-local overlay
-    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/metadata"
-    mkdir -p "${INSTALLDIR}/var/db/repos/qubes/profiles"
-    echo 'masters = gentoo' > "${INSTALLDIR}/var/db/repos/qubes/metadata/layout.conf"
-    echo 'qubes' > "${INSTALLDIR}/var/db/repos/qubes/profiles/repo_name"
-
-    # Register builder-local overlay
-    cat > "${INSTALLDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
+setupQubesOverlay() {
+    CHROOTDIR="$1"
+    rm -rf "${CHROOTDIR}/var/db/repos/qubes"
+    mkdir -p "${CHROOTDIR}/var/db/repos/qubes"
+    cat > "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
 [qubes]
 location = /var/db/repos/qubes
-auto-sync = no
+sync-uri = https://github.com/fepitre/qubes-gentoo.git
+sync-type = git
+sync-git-verify-commit-signature = true
+sync-openpgp-key-path = /usr/share/openpgp-keys/frederic-pierret.asc
+sync-openpgp-key-refresh = false
+auto-sync = yes
 EOF
+
+    # Add @fepitre's key
+    cp "${SCRIPTSDIR}/../keys/frederic-pierret.asc" "${CHROOTDIR}/usr/share/openpgp-keys/frederic-pierret.asc"
+
+    # Add Qubes overlay
+    chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
 }
 
 getFile() {

@@ -7,24 +7,25 @@ if [ "$VERBOSE" -ge 2 ] || [ "$DEBUG" -gt 0 ]; then
     set -x
 fi
 
-if ! [ -f "${INSTALLDIR}/etc/.template_stage4" ]; then
-    # shellcheck source=scripts/distribution.sh
-    . ${SCRIPTSDIR}/distribution.sh
+# shellcheck source=scripts/distribution.sh
+. ${SCRIPTSDIR}/distribution.sh
 
-    LOCALREPO="$(readlink -f "pkgs-for-template/$DIST/pkgs")"
+prepareChroot "${INSTALLDIR}"
+mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
-    prepareChroot "${INSTALLDIR}"
-    mountCache "${CACHEDIR}" "${INSTALLDIR}"
+# Add Qubes Overlay
+setupQubesOverlay "${INSTALLDIR}"
 
-    # Mount builder-local overlay
-    mountBuilderOverlay "${LOCALREPO}" "${INSTALLDIR}"
+# Qubes Gentoo USE flags
+cp "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/qubes"
 
-    # Qubes specific packages to install
-    PACKAGES="$(getQubesPackagesList "$TEMPLATE_FLAVOR")"
+updateChroot "${INSTALLDIR}"
 
+# Qubes specific packages to install
+PACKAGES="$(getQubesPackagesList "$TEMPLATE_FLAVOR")"
+
+if [ -n "${PACKAGES}" ]; then
     echo "  --> Installing Qubes packages..."
     echo "    --> Selected packages: ${PACKAGES}"
-    chroot "${INSTALLDIR}" /bin/bash -l -c "emerge -b -k ${PACKAGES}"
-
-    touch "${INSTALLDIR}/etc/.template_stage4"
+    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge -b ${PACKAGES}"
 fi
