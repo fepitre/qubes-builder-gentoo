@@ -159,6 +159,3 @@ update-repo:
 ifndef UPDATE_REPO
 	$(error "You need to specify destination repo in UPDATE_REPO variable")
 endif
-	# rm -rf $(UPDATE_REPO)/pkgs/
-	# mkdir -p $(UPDATE_REPO)/pkgs
-	# cp -ap $(BUILDER_REPO_DIR)/* $(UPDATE_REPO)/pkgs/
