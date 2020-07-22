@@ -23,11 +23,6 @@ cp "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.us
 
 updateChroot "${INSTALLDIR}"
 
-# Fix https://bugs.gentoo.org/733302
-if [ "$TEMPLATE_FLAVOR" != "minimal" ]; then
-    chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} media-libs/libcanberra"
-fi
-
 # Standard Gentoo packages to install
 PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
 
