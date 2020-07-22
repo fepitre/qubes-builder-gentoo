@@ -12,6 +12,7 @@ INSTALLDIR="$1"
 DISTRO="$2"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
+mkdir -p "$CACHEDIR"
 
 GPG_KEYRING="$(readlink -f ${CACHEDIR}/gentoo-trustedkeys.gpg)"
 GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
