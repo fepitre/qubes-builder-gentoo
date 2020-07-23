@@ -2,11 +2,14 @@
 app-emulation/xen-tools -api -debug -doc -flask -hvm -ipxe -ocaml -ovmf -pam -pygrub -python -qemu -qemu-traditional -rombios -screen -sdl -static-libs -system-ipxe -system-qemu -system-seabios
 
 # required by core-agent-linux-network-manager
->=net-wireless/wpa_supplicant-2.9-r2 dbus
+net-wireless/wpa_supplicant dbus
 
 # required by Gnome related packages
 */* ruby_targets_ruby27
 gnome-base/gnome-light -gnome-shell
 
+# required by Firefox
+media-libs/libvpx postproc
+
 # required by Thunderbird
->=dev-db/sqlite-3.32.3 secure-delete
+dev-db/sqlite secure-delete

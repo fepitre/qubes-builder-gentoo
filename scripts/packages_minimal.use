@@ -2,7 +2,7 @@
 app-emulation/xen-tools -api -debug -doc -flask -hvm -ipxe -ocaml -ovmf -pam -pygrub -python -qemu -qemu-traditional -rombios -screen -sdl -static-libs -system-ipxe -system-qemu -system-seabios
 
 # x-packages
->=media-libs/libglvnd-1.3.2 X
->=media-plugins/alsa-plugins-1.2.2 pulseaudio
->=app-text/xmlto-0.0.28-r2 text
->=x11-libs/cairo-1.16.0-r4 X
+media-libs/libglvnd X
+media-plugins/alsa-plugins pulseaudio
+app-text/xmlto text
+x11-libs/cairo X
