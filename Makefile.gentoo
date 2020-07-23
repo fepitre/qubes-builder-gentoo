@@ -68,26 +68,31 @@ endif
 dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@echo "--> Gentoo dist-prepare-chroot (makefile):"
 	@echo "  --> Checking mounting of dev/proc/sys on build chroot..."
+
 	@if [ ! -r "$(CHROOT_DIR)/dev/zero" ]; then\
 		echo "    --> sudo mount --bind /dev $(CHROOT_DIR)/dev";\
 		sudo mount --rbind /dev "$(CHROOT_DIR)/dev";\
 	fi
+
 	@if [ "$(shell stat -f -c '%T' ${INSTALLDIR}/dev/shm 2>/dev/null)" != "tmpfs" ]; then\
 		echo "    --> sudo mount -t tmpfs shm "$(CHROOT_DIR)/dev/shm";\
 		sudo mkdir -p "$(CHROOT_DIR)/dev/shm";\
 		sudo mount -t tmpfs shm "$(CHROOT_DIR)/dev/shm";\
 		sudo chmod 1777 "$(CHROOT_DIR)/dev/shm";\
 	fi
+
 	@if [ ! -r "$(CHROOT_DIR)/proc/cpuinfo" ]; then\
 		echo "    --> sudo mount -t proc proc $(CHROOT_DIR)/proc";\
 		mkdir -p $(CHROOT_DIR)/proc; \
 		sudo mount -t proc proc "$(CHROOT_DIR)/proc";\
 	fi
+
 	@if [ ! -d "$(CHROOT_DIR)/sys" ]; then\
 		echo "    --> sudo mount --bind /sys $(CHROOT_DIR)/sys";\
 		mkdir -p $(CHROOT_DIR)/sys;\
 		sudo mount --bind /sys "$(CHROOT_DIR)/sys";\
 	fi
+
 	@sudo mkdir -p "$(CACHEDIR)/distfiles"
 	@sudo touch "$(CACHEDIR)/distfiles/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/var/cache/distfiles/.mnt" ]; then\
