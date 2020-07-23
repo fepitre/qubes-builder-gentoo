@@ -19,7 +19,10 @@ if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE
 fi
 
 # Standard Gentoo USE flags
-cp "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/standard"
+if [ -e "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" ]; then
+    mkdir -p "${INSTALLDIR}/etc/portage/package.use"
+    cp "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/standard"
+fi
 
 updateChroot "${INSTALLDIR}"
 

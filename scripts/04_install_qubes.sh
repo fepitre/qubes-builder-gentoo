@@ -17,7 +17,9 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 setupQubesOverlay "${INSTALLDIR}"
 
 # Qubes Gentoo USE flags
-cp "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/qubes"
+if [ -e "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" ]; then
+    cp "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/qubes"
+fi
 
 updateChroot "${INSTALLDIR}"
 
