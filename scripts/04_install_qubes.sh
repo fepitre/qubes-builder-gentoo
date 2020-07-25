@@ -16,10 +16,14 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 # Add Qubes Overlay
 setupQubesOverlay "${INSTALLDIR}"
 
-# Qubes Gentoo USE flags
-if [ -e "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" ]; then
-    cp "$(getQubesUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/qubes"
-fi
+# Qubes Gentoo flags
+for flag in use accept_keywords
+do
+    if [ -e "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+        mkdir -p "${INSTALLDIR}/etc/portage/package.$flag"
+        cp "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" "${INSTALLDIR}/etc/portage/package.$flag/qubes"
+    fi
+done
 
 updateChroot "${INSTALLDIR}"
 
@@ -29,5 +33,5 @@ PACKAGES="$(getQubesPackagesList "$TEMPLATE_FLAVOR")"
 if [ -n "${PACKAGES}" ]; then
     echo "  --> Installing Qubes packages..."
     echo "    --> Selected packages: ${PACKAGES}"
-    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge -b ${PACKAGES}"
+    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
 fi

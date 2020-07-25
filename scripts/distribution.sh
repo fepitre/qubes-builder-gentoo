@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EMERGE_FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
-EMERGE_OPTS="-b -k --keep-going=y"
+EMERGE_OPTS="-b -k --keep-going=y -n"
 
 prepareChroot() {
     CHROOTDIR="$1"
@@ -31,13 +31,13 @@ chrootCmd() {
     shift
     CMD="$*"
 
-    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "rm -f /etc/ld.so.cache && ldconfig && env-update"
+    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "env-update"
     chroot "${CHROOTDIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
 }
 
 updateChroot() {
     CHROOTDIR="$1"
-
+    chrootCmd "${CHROOTDIR}" "emaint -a sync"
     chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
@@ -75,18 +75,12 @@ EOF
 }
 
 getFile() {
-    PREFIX="$1"
-    SUFFIX="$2"
-    TEMPLATE_FLAVOR="$3"
-    if [ -n "$TEMPLATE_FLAVOR" ]; then
-        FILE="${SCRIPTSDIR}/${PREFIX}_${TEMPLATE_FLAVOR}${SUFFIX}"
-        if ! [ -r "$FILE" ]; then
-            echo "ERROR: '$FILE' does not exist!"
-            exit 1
-        fi
-    else
-        FILE="${SCRIPTSDIR}/${PREFIX}${SUFFIX}"
-    fi
+    BASEDIR="$1"
+    PREFIX="$2"
+    SUFFIX="$3"
+    TEMPLATE_FLAVOR="$4"
+
+    FILE="${BASEDIR}/${PREFIX}${TEMPLATE_FLAVOR}${SUFFIX}"
 
     echo "$FILE"
 }
@@ -96,29 +90,37 @@ getPackagesList() {
     TEMPLATE_FLAVOR="$2"
 
     # Strip comments, then convert newlines to single spaces
-    PKGGROUPS="$(sed '/^ *#/d; s/  *#.*//' "$(getFile "$PREFIX" ".list" "${TEMPLATE_FLAVOR}")" | sed ':a;N;$!ba; s/\n/ /g; s/  */ /g')"
+    FILE="$(getFile "${SCRIPTSDIR}" "$PREFIX" ".list" "${TEMPLATE_FLAVOR}")"
+    if [ ! -e "$FILE" ]; then
+        echo "Cannot find '$FILE'!"
+        exit 1
+    fi
+    PKGGROUPS="$(sed '/^ *#/d; s/  *#.*//' "$FILE" | sed ':a;N;$!ba; s/\n/ /g; s/  */ /g')"
 
     echo "${PKGGROUPS}"
 }
 
 getBasePackagesList() {
-    TEMPLATE_FLAVOR="$1"
-    getPackagesList packages "${TEMPLATE_FLAVOR}"
+    # Default flavor is 'gnome' without explicit TEMPLATE_FLAVOR value
+    TEMPLATE_FLAVOR="${1:-gnome}"
+    getPackagesList packages_ "${TEMPLATE_FLAVOR}"
 }
 
 getQubesPackagesList() {
-    TEMPLATE_FLAVOR="$1"
-    getPackagesList packages_qubes "${TEMPLATE_FLAVOR}"
+    TEMPLATE_FLAVOR="${1:-gnome}"
+    getPackagesList packages_qubes_ "${TEMPLATE_FLAVOR}"
 }
 
-getBaseUseFlags() {
-    TEMPLATE_FLAVOR="$1"
+getBaseFlags() {
+    TEMPLATE_FLAVOR="${1:-gnome}"
+    FLAGS="$2"
 
-    getFile packages .use "${TEMPLATE_FLAVOR}"
+    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${TEMPLATE_FLAVOR}"
 }
 
-getQubesUseFlags() {
-    TEMPLATE_FLAVOR="$1"
+getQubesFlags() {
+    TEMPLATE_FLAVOR="${1:-gnome}"
+    FLAGS="$2"
 
-    getFile packages_qubes .use "${TEMPLATE_FLAVOR}"
+    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${TEMPLATE_FLAVOR}"
 }

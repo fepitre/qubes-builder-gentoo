@@ -18,11 +18,14 @@ if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE
     chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
 fi
 
-# Standard Gentoo USE flags
-if [ -e "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" ]; then
-    mkdir -p "${INSTALLDIR}/etc/portage/package.use"
-    cp "$(getBaseUseFlags "$TEMPLATE_FLAVOR")" "${INSTALLDIR}/etc/portage/package.use/standard"
-fi
+# Standard Gentoo flags
+for flag in use accept_keywords
+do
+    if [ -e "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+        mkdir -p "${INSTALLDIR}/etc/portage/package.$flag"
+        cp "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" "${INSTALLDIR}/etc/portage/package.$flag/standard"
+    fi
+done
 
 updateChroot "${INSTALLDIR}"
 
@@ -32,5 +35,5 @@ PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
 if [ -n "${PACKAGES}" ]; then
     echo "  --> Installing Gentoo packages..."
     echo "    --> Selected packages: ${PACKAGES}"
-    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} -n ${PACKAGES}"
+    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
 fi
