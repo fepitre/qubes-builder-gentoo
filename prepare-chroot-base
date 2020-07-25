@@ -22,7 +22,7 @@ GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
 
 if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     STAGE_FLAVOR="latest-stage3-amd64-systemd"
-    GENTOO_MIRROR="${GENTOO_MIRROR:-http://distfiles.gentoo.org}"
+    GENTOO_MIRROR="${GENTOO_MIRROR:-https://distfiles.gentoo.org}"
 
     STAGE_DIR="${CACHEDIR}/stage"
     PORTAGE_DIR="${CACHEDIR}/portage"

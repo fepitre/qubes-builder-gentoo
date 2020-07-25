@@ -1,2 +1,7 @@
 app-emulation/xen-tools ~amd64
+
+# required for pandoc
+dev-haskell/* ~amd64
+app-admin/haskell-updater ~amd64
+dev-lang/ghc ~amd64
 app-text/pandoc ~amd64

@@ -10,20 +10,17 @@
 #   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
 #     CHROOT_DIR (qubes-src will be created in this directory)
 #
-PACKAGE_LIST = $(strip $(EBUILD_FILES) $(EBUILD_PACKAGES))
+ifneq ($(GENTOO_OVERLAY),)
+PACKAGE_LIST = $(shell find $(GENTOO_OVERLAY) -type f -name "*.ebuild" -exec dirname {} \; | sed 's|$(GENTOO_OVERLAY)||g')
+endif
 DIST_BUILD_DIR = /home/user
 
 ### Local variables
 RUN_AS_USER = user
 
-GENTOO_MIRROR ?= https://mirrors.kernel.org/gentoo
+GENTOO_MIRROR ?= https://distfiles.gentoo.org
 
-PV ?= $(shell cat $(SRC_DIR)/$(COMPONENT)/version 2>/dev/null)
-PR ?= $(if $(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),$(shell cat $(SRC_DIR)/$(COMPONENT)/rel 2>/dev/null),1)
-
-EBUILD_FILE = $(PACKAGE)
 EBUILD_COMPONENT = $(basename $(notdir $(EBUILD_FILE)))
-EBUILD_PV_PR = $(EBUILD_COMPONENT)-$(PV)-r$(PR).ebuild
 
 DEBUG ?= 0
 ifneq ($(DEBUG),0)
@@ -57,7 +54,7 @@ ifneq ($(DEBUG),0)
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
   $(info ║ UPDATE_REPO:           $(UPDATE_REPO))            #
   $(info ║ REPO_PROXY:            $(REPO_PROXY))             #
-  $(info ║ GENTOO_MIRROR:         $(GENTOO_MIRROR))          # https://mirrors.kernel.org/
+  $(info ║ GENTOO_MIRROR:         $(GENTOO_MIRROR))          # https://distfiles.gentoo.org
   $(info ╚═══════════════════════════════════════════════════════════════════════════════)
 endif
 
@@ -74,8 +71,8 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 		sudo mount --rbind /dev "$(CHROOT_DIR)/dev";\
 	fi
 
-	@if [ "$(shell stat -f -c '%T' ${INSTALLDIR}/dev/shm 2>/dev/null)" != "tmpfs" ]; then\
-		echo "    --> sudo mount -t tmpfs shm "$(CHROOT_DIR)/dev/shm";\
+	@if [ "$(shell stat -f -c '%T' ${INSTALLDIR}/dev/shm 2>/dev/null)" != tmpfs ]; then\
+		echo "    --> sudo mount -t tmpfs shm $(CHROOT_DIR)/dev/shm";\
 		sudo mkdir -p "$(CHROOT_DIR)/dev/shm";\
 		sudo mount -t tmpfs shm "$(CHROOT_DIR)/dev/shm";\
 		sudo chmod 1777 "$(CHROOT_DIR)/dev/shm";\
@@ -96,7 +93,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@sudo mkdir -p "$(CACHEDIR)/distfiles"
 	@sudo touch "$(CACHEDIR)/distfiles/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/var/cache/distfiles/.mnt" ]; then\
-		echo "    --> mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";"; \
+		echo "    --> mount --bind ${CACHEDIR}/distfiles ${CHROOT_DIR}/var/cache/distfiles"; \
 		sudo mkdir -p "$(CHROOT_DIR)/var/cache/distfiles";\
 		sudo mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";\
 	fi
@@ -104,7 +101,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@sudo mkdir -p "$(CACHEDIR)/binpkgs"
 	@sudo touch "$(CACHEDIR)/binpkgs/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/var/cache/binpkgs/.mnt" ]; then\
-		echo "    --> mount --bind "${CACHEDIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs/";"; \
+		echo "    --> mount --bind ${CACHEDIR}/binpkgs ${CHROOT_DIR}/var/cache/binpkgs"; \
 		sudo mkdir -p "$(CHROOT_DIR)/var/cache/binpkgs";\
 		sudo mount --bind "${CACHEDIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs";\
 	fi
@@ -112,7 +109,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@sudo mkdir -p "$(BUILDER_REPO_DIR)"
 	@sudo touch "$(BUILDER_REPO_DIR)/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/.mnt" ]; then\
-		echo "    --> mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";"; \
+		echo "    --> mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-packages-mirror-repo"; \
 		sudo mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
 		sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
 	fi
@@ -133,22 +130,16 @@ dist-prep:
 # dist-build-dep - install build dependencies (should operate on chroot directory)
 dist-build-dep:
 	@echo "--> Gentoo dist-build-dep (makefile)"
+	@sudo -E "$(GENTOO_PLUGIN_DIR)/update-local-repo.sh" $(DIST)
 
 # dist-package - compile package (should operate on chroot directory)
 dist-package:
-	@echo "--> Gentoo dist-package (makefile)"
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
+	@echo "--> Gentoo dist-package (makefile)"
 	@echo "  --> Preparing package in $(DIST_SRC)"
-
-	# cp $(CHROOT_DIR)/$(DIST_SRC)/$(EBUILD_FILE) $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation/$(EBUILD_COMPONENT)/$(EBUILD_PV_PR); \
-	# sudo cp -r $(CHROOT_DIR)/$(DIST_SRC)/pkgs/app-emulation $(CHROOT_DIR)/var/db/repos/qubes/
-	# sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c 'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && sudo ebuild $(EBUILD_PV_PR) manifest clean'
-	
-	# sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" su user -c 'cd "/var/db/repos/qubes/app-emulation/$(EBUILD_COMPONENT)" && \
-	# 	sudo emerge --onlydeps app-emulation/$(EBUILD_COMPONENT) && \
-	# 	sudo emerge --buildpkgonly app-emulation/$(EBUILD_COMPONENT)'
+	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" bash -c -l "emerge -b -k --keep-going=y $(PACKAGE)"
 
 # dist-copy-out - copy compiled package out of chroot env; this target should
 #     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to

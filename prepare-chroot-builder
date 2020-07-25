@@ -42,17 +42,20 @@ EOF
         mkdir -p "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo
         mount --bind "${BUILDER_REPO_DIR}" "${INSTALLDIR}/tmp/qubes-packages-mirror-repo"
     fi
-
-    # builder-local overlay
-    mkdir -p "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/metadata"
-    mkdir -p "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/profiles"
-    echo 'masters = gentoo' > "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/metadata/layout.conf"
-    echo 'builder-local' > "${INSTALLDIR}/tmp/qubes-packages-mirror-repo/profiles/repo_name"
-
-    cat > "${INSTALLDIR}/etc/portage/repos.conf/builder-local.conf" <<EOF
-[builder-local]
-location = /tmp/qubes-packages-mirror-repo
-auto-sync = no
-EOF
-
 fi
+
+# builder-local overlay
+setupBuilderOverlay "${INSTALLDIR}"
+
+# Standard Gentoo flags
+setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+
+# Qubes Gentoo flags
+setupQubesFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+
+if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE_FLAVOR" == "gnome" ]; then
+    # Select desktop/gnome/systemd profile
+    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
+fi
+
+updateChroot "${INSTALLDIR}"

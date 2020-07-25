@@ -37,7 +37,6 @@ chrootCmd() {
 
 updateChroot() {
     CHROOTDIR="$1"
-    chrootCmd "${CHROOTDIR}" "emaint -a sync"
     chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
@@ -50,28 +49,6 @@ mountCache() {
 
     mount --bind "${CACHEDIR}/distfiles" "${CHROOTDIR}/var/cache/distfiles"
     mount --bind "${CACHEDIR}/binpkgs" "${CHROOTDIR}/var/cache/binpkgs"
-}
-
-setupQubesOverlay() {
-    CHROOTDIR="$1"
-    rm -rf "${CHROOTDIR}/var/db/repos/qubes"
-    mkdir -p "${CHROOTDIR}/var/db/repos/qubes"
-    cat > "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
-[qubes]
-location = /var/db/repos/qubes
-sync-uri = https://github.com/fepitre/qubes-gentoo.git
-sync-type = git
-sync-git-verify-commit-signature = true
-sync-openpgp-key-path = /usr/share/openpgp-keys/frederic-pierret.asc
-sync-openpgp-key-refresh = false
-auto-sync = yes
-EOF
-
-    # Add @fepitre's key
-    cp "${SCRIPTSDIR}/../keys/frederic-pierret.asc" "${CHROOTDIR}/usr/share/openpgp-keys/frederic-pierret.asc"
-
-    # Add Qubes overlay
-    chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
 }
 
 getFile() {
@@ -123,4 +100,89 @@ getQubesFlags() {
     FLAGS="$2"
 
     getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${TEMPLATE_FLAVOR}"
+}
+
+setupBaseFlags() {
+    CHROOTDIR="$1"
+    TEMPLATE_FLAVOR="$2"
+    for flag in use accept_keywords
+    do
+        if [ -e "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+            mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
+            cp "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/standard"
+        fi
+    done
+}
+
+setupQubesFlags() {
+    CHROOTDIR="$1"
+    for flag in use accept_keywords
+    do
+        if [ -e "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+            mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
+            cp "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/qubes"
+        fi
+    done
+}
+
+setupQubesOverlay() {
+    CHROOTDIR="$1"
+    rm -rf "${CHROOTDIR}/var/db/repos/qubes"
+    mkdir -p "${CHROOTDIR}/var/db/repos/qubes"
+    cat > "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
+[qubes]
+location = /var/db/repos/qubes
+sync-uri = https://github.com/fepitre/qubes-gentoo.git
+sync-type = git
+sync-git-verify-commit-signature = true
+sync-openpgp-key-path = /usr/share/openpgp-keys/frederic-pierret.asc
+sync-openpgp-key-refresh = false
+auto-sync = yes
+EOF
+
+    # Add @fepitre's key
+    cp "${SCRIPTSDIR}/../keys/frederic-pierret.asc" "${CHROOTDIR}/usr/share/openpgp-keys/frederic-pierret.asc"
+
+    # Add Qubes overlay
+    chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
+}
+
+# Only for local testing and building packages
+setupBuilderOverlay() {
+    CHROOTDIR="$1"
+
+    mkdir -p "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/metadata"
+    mkdir -p "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/profiles"
+    echo 'masters = gentoo' > "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/metadata/layout.conf"
+    echo 'builder-local' > "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/profiles/repo_name"
+
+    cat > "${CHROOTDIR}/etc/portage/repos.conf/builder-local.conf" <<EOF
+[builder-local]
+location = /tmp/qubes-packages-mirror-repo
+auto-sync = no
+EOF
+}
+
+installBasePackages() {
+    CHROOTDIR="$1"
+    TEMPLATE_FLAVOR="$2"
+
+    PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
+    if [ -n "${PACKAGES}" ]; then
+        echo "  --> Installing Gentoo packages..."
+        echo "    --> Selected packages: ${PACKAGES}"
+        chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+    fi
+}
+
+installQubesPackages() {
+    CHROOTDIR="$1"
+    TEMPLATE_FLAVOR="$2"
+
+    PACKAGES="$(getQubesPackagesList "$TEMPLATE_FLAVOR")"
+    if [ -n "${PACKAGES}" ]; then
+        echo "  --> Installing Qubes packages..."
+        echo "    --> Selected packages: ${PACKAGES}"
+        chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+    fi
 }

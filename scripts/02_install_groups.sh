@@ -19,21 +19,10 @@ if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE
 fi
 
 # Standard Gentoo flags
-for flag in use accept_keywords
-do
-    if [ -e "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
-        mkdir -p "${INSTALLDIR}/etc/portage/package.$flag"
-        cp "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" "${INSTALLDIR}/etc/portage/package.$flag/standard"
-    fi
-done
+setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
 
+# Ensure chroot is up to date
 updateChroot "${INSTALLDIR}"
 
 # Standard Gentoo packages to install
-PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
-
-if [ -n "${PACKAGES}" ]; then
-    echo "  --> Installing Gentoo packages..."
-    echo "    --> Selected packages: ${PACKAGES}"
-    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
-fi
+installBasePackages "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
