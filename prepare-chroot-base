@@ -28,8 +28,7 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     PORTAGE_DIR="${CACHEDIR}/portage"
 
     echo "  --> Importing Gentoo keys..."
-    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-linux-release-engineering.asc"
-    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-ebuild-repository-signing-key.asc"
+    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-release.asc.20200704"
 
     ## STAGE3
     if ! [ -f "${INSTALLDIR}/etc/.extracted_stage3" ]; then
@@ -69,24 +68,30 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     if ! [ -f "${INSTALLDIR}/etc/.extracted_portage" ]; then
         # Download latest Portage
         echo "  --> Downloading latest Portage..."
-        PORTAGE_URL="${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2"
-        wget -N -P "${PORTAGE_DIR}" "${PORTAGE_URL}"{,.gpgsig,.md5sum}
+        # we download the latest archive with a date
+        PORTAGE_LATEST="$(curl -s -L https://distfiles.gentoo.org/snapshots/ | grep -o 'portage.*.tar.bz2">' | sed 's/">//g; $d' | tail -1)"
+        if [ -z "$PORTAGE_LATEST" ]; then
+            echo "    --> Cannot determinate latest Portage date"
+            exit 1
+        fi
+        PORTAGE_URL="${GENTOO_MIRROR}/snapshots/${PORTAGE_LATEST}"
+        wget -q -P "${PORTAGE_DIR}" "${PORTAGE_URL}"{,.gpgsig,.md5sum}
 
         echo "  --> Verifying latest Portage..."
         pushd "$PORTAGE_DIR" || exit 1
-        if ! gpg $GPG_OPTS --verify portage-latest.tar.bz2.gpgsig portage-latest.tar.bz2; then
-            echo "    --> Wrong signature for portage-latest.tar.bz2"
+        if ! gpg $GPG_OPTS --verify "${PORTAGE_LATEST}.gpgsig" "${PORTAGE_LATEST}"; then
+            echo "    --> Wrong signature for ${PORTAGE_LATEST}"
             exit 1
         fi
-        if ! md5sum -c portage-latest.tar.bz2.md5sum; then
-            echo "    --> Wrong checksum for portage-latest.tar.bz2"
+        if ! md5sum -c "${PORTAGE_LATEST}.md5sum"; then
+            echo "    --> Wrong checksum for ${PORTAGE_LATEST}"
             exit 1
         fi
         popd
 
         # Extract Portage
         echo "  --> Extracting latest Portage..."
-        tar xfp "${PORTAGE_DIR}/portage-latest.tar.bz2" -C "${INSTALLDIR}/usr"
+        tar xfp "${PORTAGE_DIR}/${PORTAGE_LATEST}" -C "${INSTALLDIR}/usr"
 
         # Configure Portage
         echo "  --> Configuring Portage..."
