@@ -61,19 +61,19 @@ getFile() {
     BASEDIR="$1"
     PREFIX="$2"
     SUFFIX="$3"
-    TEMPLATE_FLAVOR="$4"
+    FLAVOR="$4"
 
-    FILE="${BASEDIR}/${PREFIX}${TEMPLATE_FLAVOR}${SUFFIX}"
+    FILE="${BASEDIR}/${PREFIX}${FLAVOR}${SUFFIX}"
 
     echo "$FILE"
 }
 
 getPackagesList() {
     PREFIX="$1"
-    TEMPLATE_FLAVOR="$2"
+    FLAVOR="$2"
 
     # Strip comments, then convert newlines to single spaces
-    FILE="$(getFile "${SCRIPTSDIR}" "$PREFIX" ".list" "${TEMPLATE_FLAVOR}")"
+    FILE="$(getFile "${SCRIPTSDIR}" "$PREFIX" ".list" "${FLAVOR}")"
     if [ ! -e "$FILE" ]; then
         echo "Cannot find '$FILE'!"
         exit 1
@@ -84,38 +84,38 @@ getPackagesList() {
 }
 
 getBasePackagesList() {
-    # Default flavor is 'gnome' without explicit TEMPLATE_FLAVOR value
-    TEMPLATE_FLAVOR="${1:-gnome}"
-    getPackagesList packages_ "${TEMPLATE_FLAVOR}"
+    # Default flavor is 'gnome' without explicit FLAVOR value
+    FLAVOR="${1:-gnome}"
+    getPackagesList packages_ "${FLAVOR}"
 }
 
 getQubesPackagesList() {
-    TEMPLATE_FLAVOR="${1:-gnome}"
-    getPackagesList packages_qubes_ "${TEMPLATE_FLAVOR}"
+    FLAVOR="${1:-gnome}"
+    getPackagesList packages_qubes_ "${FLAVOR}"
 }
 
 getBaseFlags() {
-    TEMPLATE_FLAVOR="${1:-gnome}"
+    FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
-    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${TEMPLATE_FLAVOR}"
+    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${FLAVOR}"
 }
 
 getQubesFlags() {
-    TEMPLATE_FLAVOR="${1:-gnome}"
+    FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
-    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${TEMPLATE_FLAVOR}"
+    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${FLAVOR}"
 }
 
 setupBaseFlags() {
     CHROOTDIR="$1"
-    TEMPLATE_FLAVOR="$2"
+    FLAVOR="$2"
     for flag in use accept_keywords
     do
-        if [ -e "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+        if [ -e "$(getBaseFlags "$FLAVOR" "$flag")" ]; then
             mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
-            cp "$(getBaseFlags "$TEMPLATE_FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/standard"
+            cp "$(getBaseFlags "$FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/standard"
         fi
     done
 }
@@ -124,9 +124,9 @@ setupQubesFlags() {
     CHROOTDIR="$1"
     for flag in use accept_keywords
     do
-        if [ -e "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" ]; then
+        if [ -e "$(getQubesFlags "$FLAVOR" "$flag")" ]; then
             mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
-            cp "$(getQubesFlags "$TEMPLATE_FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/qubes"
+            cp "$(getQubesFlags "$FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/qubes"
         fi
     done
 }
@@ -171,24 +171,36 @@ EOF
 
 installBasePackages() {
     CHROOTDIR="$1"
-    TEMPLATE_FLAVOR="$2"
+    FLAVOR="$2"
 
-    PACKAGES="$(getBasePackagesList "$TEMPLATE_FLAVOR")"
+    PACKAGES="$(getBasePackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Gentoo packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
     fi
 }
 
 installQubesPackages() {
     CHROOTDIR="$1"
-    TEMPLATE_FLAVOR="$2"
+    FLAVOR="$2"
 
-    PACKAGES="$(getQubesPackagesList "$TEMPLATE_FLAVOR")"
+    PACKAGES="$(getQubesPackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Qubes packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+    fi
+}
+
+getPortageProfile() {
+    CHROOTDIR="$1"
+    FLAVOR="$2"
+    if [ -z "$FLAVOR" ] || [ "$FLAVOR" == "xfce" ] || [ "$FLAVOR" == "gnome" ]; then
+        # Select desktop/gnome/systemd profile
+        chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
+    else
+        # Select default systemd profile
+        chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/systemd"
     fi
 }

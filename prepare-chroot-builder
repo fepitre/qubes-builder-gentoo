@@ -10,6 +10,7 @@ fi
 
 INSTALLDIR="$1"
 DISTRO="$2"
+FLAVOR="${3:-minimal}"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 
@@ -22,7 +23,7 @@ export INSTALLDIR SCRIPTSDIR
 if ! [ -d "${INSTALLDIR}/home/user" ]; then
     mkdir -p "$INSTALLDIR"
 
-    "${GENTOO_PLUGIN_DIR}/prepare-chroot-base" "$INSTALLDIR" "$DISTRO"
+    "${GENTOO_PLUGIN_DIR}/prepare-chroot-base" "$INSTALLDIR" "$DISTRO" "$FLAVOR"
 
     [ -n "$SUDO_UID" ] && USER_OPTS="-u ${SUDO_UID}"
     [ -n "$USER_UID" ] && USER_OPTS="-u ${USER_UID}"
@@ -53,14 +54,12 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 setupBuilderOverlay "${INSTALLDIR}"
 
 # Standard Gentoo flags
-setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+setupBaseFlags "${INSTALLDIR}" "${FLAVOR}"
 
 # Qubes Gentoo flags
-setupQubesFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+setupQubesFlags "${INSTALLDIR}" "${FLAVOR}"
 
-if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE_FLAVOR" == "gnome" ]; then
-    # Select desktop/gnome/systemd profile
-    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
-fi
+# Select profile
+getPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
 updateChroot "${INSTALLDIR}"

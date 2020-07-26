@@ -13,11 +13,6 @@ fi
 prepareChroot "${INSTALLDIR}"
 mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
-if [ -z "$TEMPLATE_FLAVOR" ] || [ "$TEMPLATE_FLAVOR" == "xfce" ] || [ "$TEMPLATE_FLAVOR" == "gnome" ]; then
-    # Select desktop/gnome/systemd profile
-    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
-fi
-
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
 

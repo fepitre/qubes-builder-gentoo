@@ -10,6 +10,7 @@ fi
 
 INSTALLDIR="$1"
 DISTRO="$2"
+FLAVOR="${3:-minimal}"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 mkdir -p "$CACHEDIR"
@@ -104,20 +105,17 @@ EOF
         touch "${INSTALLDIR}/etc/.extracted_portage"
     fi
 
-    mkdir -p "${INSTALLDIR}/etc/portage/repos.conf"
-    cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
-
-    # Fix missing directory for the first emerge
-    mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
-
     prepareChroot "${INSTALLDIR}"
     mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
-    # Sync portage overlay
+    # Prepare and sync Gentoo overlay
+    mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
+    mkdir -p "${INSTALLDIR}/etc/portage/repos.conf"
+    cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
     chrootCmd "${INSTALLDIR}" "emerge-webrsync"
 
-    # Select default systemd profile
-    chrootCmd "${INSTALLDIR}" "eselect profile set default/linux/amd64/17.1/systemd"
+    # Select profile
+    getPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
     updateChroot "${INSTALLDIR}"
 
