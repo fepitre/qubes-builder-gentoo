@@ -23,7 +23,7 @@ GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
 
 if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     STAGE_FLAVOR="latest-stage3-amd64-systemd"
-    GENTOO_MIRROR="${GENTOO_MIRROR:-https://distfiles.gentoo.org}"
+    GENTOO_DISTFILES="${GENTOO_DISTFILES:-https://distfiles.gentoo.org}"
 
     STAGE_DIR="${CACHEDIR}/stage"
     PORTAGE_DIR="${CACHEDIR}/portage"
@@ -34,11 +34,11 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     ## STAGE3
     if ! [ -f "${INSTALLDIR}/etc/.extracted_stage3" ]; then
         # Get info about latest Gentoo stage3
-        STAGE_INFO="${GENTOO_MIRROR}/releases/amd64/autobuilds/${STAGE_FLAVOR}.txt"
+        STAGE_INFO="${GENTOO_DISTFILES}/releases/amd64/autobuilds/${STAGE_FLAVOR}.txt"
         wget -q -N -P "${STAGE_DIR}" "${STAGE_INFO}"
 
         # Extract stage3 URL and name
-        STAGE_BASEURL="${GENTOO_MIRROR}/releases/amd64/autobuilds"
+        STAGE_BASEURL="${GENTOO_DISTFILES}/releases/amd64/autobuilds"
         STAGE_URL="${STAGE_BASEURL}/$(sed -n '3p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
         STAGE_FILE="$(basename "${STAGE_URL}")"
 
@@ -75,7 +75,7 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
             echo "    --> Cannot determinate latest Portage date"
             exit 1
         fi
-        PORTAGE_URL="${GENTOO_MIRROR}/snapshots/${PORTAGE_LATEST}"
+        PORTAGE_URL="${GENTOO_DISTFILES}/snapshots/${PORTAGE_LATEST}"
         wget -q -P "${PORTAGE_DIR}" "${PORTAGE_URL}"{,.gpgsig,.md5sum}
 
         echo "  --> Verifying latest Portage..."
@@ -117,11 +117,47 @@ EOF
     # Select profile
     getPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
+    # Set default FEATURES
+    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+FEATURES="$FEATURES -ipc-sandbox -network-sandbox -pid-sandbox"
+EOF
+
+    # Setup binary package mirror if requested
+    # This is a fragile method as there no built-in Gentoo method
+    # for verifying binary packages hosts. It serves only to check
+    # mirror owner before adding it into the system. Once added,
+    # nothing will prevent emerging a package if the content
+    # has changed since the first check.
+    if [ -n "${GENTOO_MIRROR}" ]; then
+        # WIP: maybe that's too strict
+        if [ -z "${GENTOO_MIRROR_KEY}" ]; then
+            echo "GENTOO_MIRROR is set without providing GENTOO_MIRROR_KEY"
+            exit 1
+        fi
+        if [ -e "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
+            gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
+            wget -q -P "${CACHEDIR}" "${GENTOO_MIRROR}"/Packages{,.gpgsig}
+            pushd "${CACHEDIR}" || exit 1
+            if ! gpg $GPG_OPTS --verify Packages.gpgsig Packages; then
+                echo "    --> Wrong signature for ${GENTOO_MIRROR}/Packages"
+                exit 1
+            fi
+            popd
+            cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+FEATURES="$FEATURES getbinpkg"
+PORTAGE_BINHOST="${GENTOO_MIRROR}"
+EOF
+        else
+            echo "Cannot find key ${GENTOO_MIRROR_KEY}.asc in builder-gentoo."
+            exit 1
+        fi
+    fi
+
     updateChroot "${INSTALLDIR}"
 
     # Install needed dependencies
     pkgs="fakeroot sudo lsb-release"
-    chrootCmd "${INSTALLDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} -n $pkgs"
+    chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} -n $pkgs"
 
     touch "${INSTALLDIR}/etc/.prepared_base"
 fi

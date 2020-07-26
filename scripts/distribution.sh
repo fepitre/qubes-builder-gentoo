@@ -1,6 +1,5 @@
 #!/bin/bash
 
-EMERGE_FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
 EMERGE_OPTS="-b -k --keep-going=y -n"
 
 prepareChroot() {
@@ -37,7 +36,7 @@ chrootCmd() {
 
 updateChroot() {
     CHROOTDIR="$1"
-    chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
+    chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
 mountCache() {
@@ -141,13 +140,13 @@ location = /var/db/repos/qubes
 sync-uri = https://github.com/fepitre/qubes-gentoo.git
 sync-type = git
 sync-git-verify-commit-signature = true
-sync-openpgp-key-path = /usr/share/openpgp-keys/frederic-pierret.asc
+sync-openpgp-key-path = /usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc
 sync-openpgp-key-refresh = false
 auto-sync = yes
 EOF
 
     # Add @fepitre's key
-    cp "${SCRIPTSDIR}/../keys/frederic-pierret.asc" "${CHROOTDIR}/usr/share/openpgp-keys/frederic-pierret.asc"
+    cp "${SCRIPTSDIR}/../keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc" "${CHROOTDIR}/usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc"
 
     # Add Qubes overlay
     chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
@@ -177,7 +176,7 @@ installBasePackages() {
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Gentoo packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
     fi
 }
 
@@ -189,7 +188,7 @@ installQubesPackages() {
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Qubes packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${CHROOTDIR}" "FEATURES=\"${EMERGE_FEATURES}\" emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
     fi
 }
 
