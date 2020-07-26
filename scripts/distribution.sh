@@ -121,6 +121,7 @@ setupBaseFlags() {
 
 setupQubesFlags() {
     CHROOTDIR="$1"
+    FLAVOR="$2"
     for flag in use accept_keywords
     do
         if [ -e "$(getQubesFlags "$FLAVOR" "$flag")" ]; then
