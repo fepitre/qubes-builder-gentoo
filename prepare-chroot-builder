@@ -11,6 +11,8 @@ fi
 INSTALLDIR="$1"
 DISTRO="$2"
 
+[ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
+
 SCRIPTSDIR=${GENTOO_PLUGIN_DIR}scripts
 export INSTALLDIR SCRIPTSDIR
 
@@ -43,6 +45,9 @@ EOF
         mount --bind "${BUILDER_REPO_DIR}" "${INSTALLDIR}/tmp/qubes-packages-mirror-repo"
     fi
 fi
+
+prepareChroot "${INSTALLDIR}"
+mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
 # builder-local overlay
 setupBuilderOverlay "${INSTALLDIR}"
