@@ -10,7 +10,10 @@ fi
 # shellcheck source=scripts/distribution.sh
 . ${SCRIPTSDIR}/distribution.sh
 
+# Mount dev/proc/sys
 prepareChroot "${INSTALLDIR}"
+
+# Mount local cache as Portage binpkgs and distfiles
 mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
 # Add Qubes Overlay

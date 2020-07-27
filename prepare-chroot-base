@@ -10,7 +10,7 @@ fi
 
 INSTALLDIR="$1"
 DISTRO="$2"
-FLAVOR="${3:-minimal}"
+FLAVOR="$3"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 mkdir -p "$CACHEDIR"
@@ -115,7 +115,7 @@ EOF
     chrootCmd "${INSTALLDIR}" "emerge-webrsync"
 
     # Select profile
-    getPortageProfile "${INSTALLDIR}" "${FLAVOR}"
+    setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
     # Set default FEATURES
     cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF

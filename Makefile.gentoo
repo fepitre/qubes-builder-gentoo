@@ -10,17 +10,20 @@
 #   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
 #     CHROOT_DIR (qubes-src will be created in this directory)
 #
+
 ifneq ($(GENTOO_OVERLAY),)
-PACKAGE_LIST = $(shell find $(GENTOO_OVERLAY) -type f -name "*.ebuild" -exec dirname {} \; | sed 's|$(GENTOO_OVERLAY)||g')
+# Get available package in the Qubes Gentoo Overlay
+AVAILABLE_PACKAGES = $(shell find $(GENTOO_OVERLAY) -type f -name "*.ebuild" -exec basename {} \; | sed 's|.ebuild||g; s|-9999||g')
+REQUESTED_PACKAGES := $(foreach _pkg, $(GENTOO_PACKAGES), $(subst $(_pkg),$(NAME_$(subst -,_,$(_pkg))),$(_pkg)))
+PACKAGE_LIST=$(filter $(REQUESTED_PACKAGES),$(AVAILABLE_PACKAGES))
 endif
+
 DIST_BUILD_DIR = /home/user
 
 ### Local variables
 RUN_AS_USER = user
 
 GENTOO_DISTFILES ?= https://distfiles.gentoo.org
-
-EBUILD_COMPONENT = $(basename $(notdir $(EBUILD_FILE)))
 
 DEBUG ?= 0
 ifneq ($(DEBUG),0)
@@ -46,7 +49,8 @@ ifneq ($(DEBUG),0)
   $(info ║ PACKAGE_LIST:          $(PACKAGE_LIST))           # gentoo
   $(info ║ DISTRIBUTION:          $(DISTRIBUTION))           # gentoo
   $(info ║ DIST:                  $(DIST))                   #
-  $(info ║ COMPONENT:             $(COMPONENT))              #
+  $(info ║ GENTOO_PACKAGES:       $(GENTOO_PACKAGES))        # qubes-db
+  $(info ║ TEMPLATE_FLAVOR:       $(TEMPLATE_FLAVOR))        # gnome, xfce or minimal
   $(info ║ PACKAGE_SET:           $(PACKAGE_SET))            # vm
   $(info ║ CHROOT_ENV:            $(CHROOT_ENV))             # BACKEND_VMM=xen
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
@@ -120,7 +124,9 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 # Create the build chroot, if it does not already exist
 $(CHROOT_DIR)/home/user/.prepared_base: $(GENTOO_PLUGIN_DIR)/prepare-chroot-builder
 	@echo "--> Gentoo preparing build chroot environment"
-	@sudo -E "$(GENTOO_PLUGIN_DIR)/prepare-chroot-builder" "$(CHROOT_DIR)" $(DIST) || exit 1
+	# The template flavor influence how packages are built. It has to be specified in env of the 'make' call:
+	# make gentoo GENTOO_PACKAGES=core-agent-linux TEMPLATE_FLAVOR=gnome
+	@sudo -E "$(GENTOO_PLUGIN_DIR)/prepare-chroot-builder" "$(CHROOT_DIR)" "$(DIST)" "$(TEMPLATE_FLAVOR)" || exit 1
 	@touch $(CHROOT_DIR)/home/user/.prepared_base
 
 # dist-prep - some preparation of sources (if needed)
@@ -130,7 +136,7 @@ dist-prep:
 # dist-build-dep - install build dependencies (should operate on chroot directory)
 dist-build-dep:
 	@echo "--> Gentoo dist-build-dep (makefile)"
-	@sudo -E "$(GENTOO_PLUGIN_DIR)/update-local-repo.sh" $(DIST)
+	@sudo -E "$(GENTOO_PLUGIN_DIR)/update-local-repo.sh" "$(CHROOT_DIR)" "$(DIST)"
 
 # dist-package - compile package (should operate on chroot directory)
 dist-package:
@@ -139,7 +145,7 @@ ifndef PACKAGE
 endif
 	@echo "--> Gentoo dist-package (makefile)"
 	@echo "  --> Preparing package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" bash -c -l "emerge -b -k --keep-going=y $(PACKAGE)"
+	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" bash -c -l "emerge -b $(PACKAGE)"
 
 # dist-copy-out - copy compiled package out of chroot env; this target should
 #     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
