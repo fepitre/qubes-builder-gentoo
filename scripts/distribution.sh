@@ -83,25 +83,24 @@ getPackagesList() {
 }
 
 getBasePackagesList() {
-    # Default flavor is 'gnome' without explicit FLAVOR value
-    FLAVOR="${1:-gnome}"
+    FLAVOR="$1"
     getPackagesList packages_ "${FLAVOR}"
 }
 
 getQubesPackagesList() {
-    FLAVOR="${1:-gnome}"
+    FLAVOR="$1"
     getPackagesList packages_qubes_ "${FLAVOR}"
 }
 
 getBaseFlags() {
-    FLAVOR="${1:-gnome}"
+    FLAVOR="$1"
     FLAGS="$2"
 
     getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${FLAVOR}"
 }
 
 getQubesFlags() {
-    FLAVOR="${1:-gnome}"
+    FLAVOR="$1"
     FLAGS="$2"
 
     getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${FLAVOR}"
@@ -153,22 +152,6 @@ EOF
     chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
 }
 
-# Only for local testing and building packages
-setupBuilderOverlay() {
-    CHROOTDIR="$1"
-
-    mkdir -p "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/metadata"
-    mkdir -p "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/profiles"
-    echo 'masters = gentoo' > "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/metadata/layout.conf"
-    echo 'builder-local' > "${CHROOTDIR}/tmp/qubes-packages-mirror-repo/profiles/repo_name"
-
-    cat > "${CHROOTDIR}/etc/portage/repos.conf/builder-local.conf" <<EOF
-[builder-local]
-location = /tmp/qubes-packages-mirror-repo
-auto-sync = no
-EOF
-}
-
 installBasePackages() {
     CHROOTDIR="$1"
     FLAVOR="$2"
@@ -193,10 +176,10 @@ installQubesPackages() {
     fi
 }
 
-getPortageProfile() {
+setPortageProfile() {
     CHROOTDIR="$1"
     FLAVOR="$2"
-    if [ -z "$FLAVOR" ] || [ "$FLAVOR" == "xfce" ] || [ "$FLAVOR" == "gnome" ]; then
+    if [ "$FLAVOR" == "xfce" ] || [ "$FLAVOR" == "gnome" ]; then
         # Select desktop/gnome/systemd profile
         chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
     else

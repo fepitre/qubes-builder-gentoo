@@ -10,7 +10,7 @@ fi
 
 INSTALLDIR="$1"
 DISTRO="$2"
-FLAVOR="${3:-minimal}"
+FLAVOR="${3:-gnome}"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 
@@ -42,16 +42,16 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
 EOF
 
     if ! [ -r "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo/.mnt ]; then
-        mkdir -p "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo
+        mkdir -p "${BUILDER_REPO_DIR}" "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo
         mount --bind "${BUILDER_REPO_DIR}" "${INSTALLDIR}/tmp/qubes-packages-mirror-repo"
     fi
 fi
 
+# Mount dev/proc/sys
 prepareChroot "${INSTALLDIR}"
-mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
-# builder-local overlay
-setupBuilderOverlay "${INSTALLDIR}"
+# Mount local cache as Portage binpkgs and distfiles
+mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${FLAVOR}"
@@ -60,6 +60,7 @@ setupBaseFlags "${INSTALLDIR}" "${FLAVOR}"
 setupQubesFlags "${INSTALLDIR}" "${FLAVOR}"
 
 # Select profile
-getPortageProfile "${INSTALLDIR}" "${FLAVOR}"
+setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
+# Ensure chroot is up to date
 updateChroot "${INSTALLDIR}"
