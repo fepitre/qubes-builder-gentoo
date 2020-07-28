@@ -18,7 +18,7 @@ DIST_BUILD_DIR = /home/user
 ### Local variables
 RUN_AS_USER = user
 
-GENTOO_DISTFILES ?= https://distfiles.gentoo.org
+GENTOO_DISTFILES ?= http://distfiles.gentoo.org
 
 EBUILD_COMPONENT = $(basename $(notdir $(EBUILD_FILE)))
 
@@ -54,7 +54,7 @@ ifneq ($(DEBUG),0)
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
   $(info ║ UPDATE_REPO:           $(UPDATE_REPO))            #
   $(info ║ REPO_PROXY:            $(REPO_PROXY))             #
-  $(info ║ GENTOO_DISTFILES:      $(GENTOO_DISTFILES))       # https://distfiles.gentoo.org
+  $(info ║ GENTOO_DISTFILES:      $(GENTOO_DISTFILES))       # http://distfiles.gentoo.org
   $(info ╚═══════════════════════════════════════════════════════════════════════════════)
 endif
 

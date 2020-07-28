@@ -23,7 +23,7 @@ GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
 
 if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     STAGE_FLAVOR="latest-stage3-amd64-systemd"
-    GENTOO_DISTFILES="${GENTOO_DISTFILES:-https://distfiles.gentoo.org}"
+    GENTOO_DISTFILES="${GENTOO_DISTFILES:-http://distfiles.gentoo.org}"
 
     STAGE_DIR="${CACHEDIR}/stage"
     PORTAGE_DIR="${CACHEDIR}/portage"
@@ -70,7 +70,7 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
         # Download latest Portage
         echo "  --> Downloading latest Portage..."
         # we download the latest archive with a date
-        PORTAGE_LATEST="$(curl -s -L https://distfiles.gentoo.org/snapshots/ | grep -o 'portage.*.tar.bz2">' | sed 's/">//g; $d' | tail -1)"
+        PORTAGE_LATEST="$(curl -s -L http://distfiles.gentoo.org/snapshots/ | grep -o 'portage.*.tar.bz2">' | sed 's/">//g; $d' | tail -1)"
         if [ -z "$PORTAGE_LATEST" ]; then
             echo "    --> Cannot determinate latest Portage date"
             exit 1
