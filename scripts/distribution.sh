@@ -83,24 +83,24 @@ getPackagesList() {
 }
 
 getBasePackagesList() {
-    FLAVOR="$1"
+    FLAVOR="${1:-gnome}"
     getPackagesList packages_ "${FLAVOR}"
 }
 
 getQubesPackagesList() {
-    FLAVOR="$1"
+    FLAVOR="${1:-gnome}"
     getPackagesList packages_qubes_ "${FLAVOR}"
 }
 
 getBaseFlags() {
-    FLAVOR="$1"
+    FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
     getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${FLAVOR}"
 }
 
 getQubesFlags() {
-    FLAVOR="$1"
+    FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
     getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${FLAVOR}"
@@ -108,7 +108,7 @@ getQubesFlags() {
 
 setupBaseFlags() {
     CHROOTDIR="$1"
-    FLAVOR="$2"
+    FLAVOR="${2:-gnome}"
     for flag in use accept_keywords
     do
         if [ -e "$(getBaseFlags "$FLAVOR" "$flag")" ]; then
@@ -120,7 +120,7 @@ setupBaseFlags() {
 
 setupQubesFlags() {
     CHROOTDIR="$1"
-    FLAVOR="$2"
+    FLAVOR="${2:-gnome}"
     for flag in use accept_keywords
     do
         if [ -e "$(getQubesFlags "$FLAVOR" "$flag")" ]; then
@@ -154,7 +154,7 @@ EOF
 
 installBasePackages() {
     CHROOTDIR="$1"
-    FLAVOR="$2"
+    FLAVOR="${2:-gnome}"
 
     PACKAGES="$(getBasePackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
@@ -166,7 +166,7 @@ installBasePackages() {
 
 installQubesPackages() {
     CHROOTDIR="$1"
-    FLAVOR="$2"
+    FLAVOR="${2:-gnome}"
 
     PACKAGES="$(getQubesPackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
@@ -178,7 +178,7 @@ installQubesPackages() {
 
 setPortageProfile() {
     CHROOTDIR="$1"
-    FLAVOR="$2"
+    FLAVOR="${2:-gnome}"
     if [ "$FLAVOR" == "xfce" ] || [ "$FLAVOR" == "gnome" ]; then
         # Select desktop/gnome/systemd profile
         chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
