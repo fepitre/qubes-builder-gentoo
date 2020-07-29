@@ -63,4 +63,4 @@ setupQubesFlags "${INSTALLDIR}" "${FLAVOR}"
 setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
 # Ensure chroot is up to date
-updateChroot "${INSTALLDIR}"
+# updateChroot "${INSTALLDIR}"
