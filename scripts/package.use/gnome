@@ -13,3 +13,5 @@ media-libs/libvpx postproc
 
 # required by Thunderbird
 dev-db/sqlite secure-delete
+
+*/openssl -bindist

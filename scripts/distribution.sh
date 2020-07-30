@@ -109,7 +109,7 @@ getQubesFlags() {
 setupBaseFlags() {
     CHROOTDIR="$1"
     FLAVOR="${2:-gnome}"
-    for flag in use accept_keywords
+    for flag in use mask accept_keywords
     do
         if [ -e "$(getBaseFlags "$FLAVOR" "$flag")" ]; then
             mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
@@ -121,7 +121,7 @@ setupBaseFlags() {
 setupQubesFlags() {
     CHROOTDIR="$1"
     FLAVOR="${2:-gnome}"
-    for flag in use accept_keywords
+    for flag in use mask accept_keywords
     do
         if [ -e "$(getQubesFlags "$FLAVOR" "$flag")" ]; then
             mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
