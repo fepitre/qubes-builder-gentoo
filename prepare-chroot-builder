@@ -64,3 +64,6 @@ setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
 # Ensure chroot is up to date
 # updateChroot "${INSTALLDIR}"
+
+# https://bugs.gentoo.org/734794
+chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} x11-libs/pixman"

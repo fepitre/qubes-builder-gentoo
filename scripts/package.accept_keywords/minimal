@@ -5,3 +5,6 @@ dev-haskell/* ~amd64
 app-admin/haskell-updater ~amd64
 dev-lang/ghc ~amd64
 app-text/pandoc ~amd64
+
+# required for app-linux-img-converter
+dev-python/nautilus-python ~amd64
