@@ -145,7 +145,7 @@ ifndef PACKAGE
 endif
 	@echo "--> Gentoo dist-package (makefile)"
 	@echo "  --> Preparing package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot "$(CHROOT_DIR)" bash -c -l "emerge -b $(PACKAGE)"
+	sudo $(CHROOT_ENV) /usr/sbin/chroot "$(CHROOT_DIR)" bash -c -l "emerge -b $(PACKAGE)"
 
 # dist-copy-out - copy compiled package out of chroot env; this target should
 #     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to

@@ -28,13 +28,13 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
     [ -n "$SUDO_UID" ] && USER_OPTS="-u ${SUDO_UID}"
     [ -n "$USER_UID" ] && USER_OPTS="-u ${USER_UID}"
     if [ -n "$USER_GID" ]; then
-        chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$USER_GID" user
+        /usr/sbin/chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$USER_GID" user
     elif [ -n "$SUDO_GID" ]; then
-        chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$SUDO_GID" user
+        /usr/sbin/chroot "$INSTALLDIR" /usr/sbin/groupadd -g "$SUDO_GID" user
     else
-        chroot "$INSTALLDIR" /usr/sbin/groupadd user
+        /usr/sbin/chroot "$INSTALLDIR" /usr/sbin/groupadd user
     fi
-    chroot "$INSTALLDIR" /bin/bash -c \
+    /usr/sbin/chroot "$INSTALLDIR" /bin/bash -c \
         "useradd -g user -G wheel $USER_OPTS -m user; su -c 'mkdir qubes-src' - user"
 
     cat > "${INSTALLDIR}/etc/sudoers.d/qubes-builder-user" <<EOF

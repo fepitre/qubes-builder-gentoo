@@ -30,8 +30,8 @@ chrootCmd() {
     shift
     CMD="$*"
 
-    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "env-update"
-    chroot "${CHROOTDIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
+    /usr/sbin/chroot "${CHROOTDIR}" env -i /bin/bash -l -c "env-update"
+    /usr/sbin/chroot "${CHROOTDIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
 }
 
 updateChroot() {
