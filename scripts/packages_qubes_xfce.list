@@ -5,3 +5,6 @@ app-emulation/qubes-utils
 app-emulation/qubes-core-agent-linux
 app-emulation/qubes-gui-agent
 app-emulation/qubes-gpg-split
+app-emulation/qubes-img-converter
+app-emulation/qubes-pdf-converter
+app-emulation/qubes-thunderbird
