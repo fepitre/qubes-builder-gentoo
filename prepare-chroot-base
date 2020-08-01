@@ -44,7 +44,7 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
 
         # Download the stage3
         echo "  --> Downloading Gentoo $DISTRO stage3..."
-        wget -N -P "${STAGE_DIR}" "${STAGE_URL}"{,.DIGESTS.asc}
+        wget -q -N -P "${STAGE_DIR}" "${STAGE_URL}"{,.DIGESTS.asc}
 
         echo "  --> Verifying Gentoo $DISTRO stage3..."
         pushd "$STAGE_DIR" || exit 1
