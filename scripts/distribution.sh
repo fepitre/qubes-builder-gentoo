@@ -54,6 +54,11 @@ mountCache() {
     fi
     mount --bind "${CACHEDIR}/distfiles" "${CHROOTDIR}/var/cache/distfiles"
     mount --bind "${CACHEDIR}/binpkgs" "${CHROOTDIR}/var/cache/binpkgs"
+
+    chrootCmd "${CHROOTDIR}" 'chmod 755 /var/cache/binpkgs'
+    chrootCmd "${CHROOTDIR}" 'chmod 755 /var/cache/distfiles'
+    chrootCmd "${CHROOTDIR}" 'chown -R portage:portage /var/cache/binpkgs'
+    chrootCmd "${CHROOTDIR}" 'chown -R portage:portage /var/cache/distfiles'
 }
 
 getFile() {
