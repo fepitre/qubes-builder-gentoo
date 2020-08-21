@@ -128,12 +128,10 @@ EOF
     # mirror owner before adding it into the system. Once added,
     # nothing will prevent emerging a package if the content
     # has changed since the first check.
+    # GENTOO_MIRROR=https://mirror.notset.fr/gentoo/qubes/gnome+9FA64B92F95E706BF28E2CA6484010B5CDC576E2
     if [ -n "${GENTOO_MIRROR}" ]; then
-        # WIP: maybe that's too strict
-        if [ -z "${GENTOO_MIRROR_KEY}" ]; then
-            echo "GENTOO_MIRROR is set without providing GENTOO_MIRROR_KEY"
-            exit 1
-        fi
+        GENTOO_MIRROR_KEY="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f2)"
+        GENTOO_MIRROR="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f1)"
         if [ -e "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
             gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
             wget -q -P "${CACHEDIR}" "${GENTOO_MIRROR}/${FLAVOR}"/Packages{,.gpgsig}
