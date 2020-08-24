@@ -20,9 +20,6 @@ rm -f "${INSTALLDIR}/etc/.extracted_portage"
 umount "${INSTALLDIR}/var/cache/binpkgs" || true
 umount "${INSTALLDIR}/var/cache/distfiles" || true
 
-# Remove needed build features
-sed -i "/-ipc-sandbox -network-sandbox -pid-sandbox/d" "${INSTALLDIR}/etc/portage/make.conf"
-
 # If exists, remove PORTAGE_BINHOST and use of binpkg
 sed -i "/PORTAGE_BINHOST=/d" "${INSTALLDIR}/etc/portage/make.conf"
 sed -i "/getbinpkg/d" "${INSTALLDIR}/etc/portage/make.conf"

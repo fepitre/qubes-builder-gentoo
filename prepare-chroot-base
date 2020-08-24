@@ -117,11 +117,6 @@ EOF
     # Select profile
     setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 
-    # Set default FEATURES
-    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
-FEATURES="\$FEATURES -ipc-sandbox -network-sandbox -pid-sandbox"
-EOF
-
     # Setup binary package mirror if requested
     # This is a fragile method as there no built-in Gentoo method
     # for verifying binary packages hosts. It serves only to check
