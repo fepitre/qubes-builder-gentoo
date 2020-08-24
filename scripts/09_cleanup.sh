@@ -20,8 +20,9 @@ rm -f "${INSTALLDIR}/etc/.extracted_portage"
 umount "${INSTALLDIR}/var/cache/binpkgs" || true
 umount "${INSTALLDIR}/var/cache/distfiles" || true
 
-# If exists, remove PORTAGE_BINHOST
+# If exists, remove PORTAGE_BINHOST and use of binpkg
 sed -i "/PORTAGE_BINHOST=/d" "${INSTALLDIR}/etc/portage/make.conf"
+sed -i '/FEATURES="$FEATURES getbinpkg"/d' "${INSTALLDIR}/etc/portage/make.conf"
 
 echo " --> Fix permissions"
 chrootCmd "${INSTALLDIR}" 'chmod 755 /var/cache/binpkgs'
