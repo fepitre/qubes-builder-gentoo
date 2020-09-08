@@ -10,6 +10,7 @@ gnome-base/gnome-light -gnome-shell
 
 # required by Firefox
 media-libs/libvpx postproc
+media-libs/libsdl2 -wayland
 
 # required by Thunderbird
 dev-db/sqlite secure-delete

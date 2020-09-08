@@ -9,6 +9,7 @@ net-wireless/wpa_supplicant dbus
 
 # required by Firefox
 media-libs/libvpx postproc
+media-libs/libsdl2 -wayland
 
 # required by Thunderbird
 dev-db/sqlite secure-delete
