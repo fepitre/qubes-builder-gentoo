@@ -19,6 +19,9 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
 
+# Update Portage
+updatePortage "${INSTALLDIR}"
+
 # Ensure chroot is up to date
 updateChroot "${INSTALLDIR}"
 

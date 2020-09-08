@@ -39,6 +39,11 @@ updateChroot() {
     chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
+updatePortage() {
+    CHROOTDIR="$1"
+    chrootCmd "${INSTALLDIR}" 'emerge -b -k --update portage'
+}
+
 mountCache() {
     CACHEDIR="$1"
     CHROOTDIR="$2"

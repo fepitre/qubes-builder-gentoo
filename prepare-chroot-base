@@ -112,7 +112,7 @@ EOF
     mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
     mkdir -p "${INSTALLDIR}/etc/portage/repos.conf"
     cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
-    chrootCmd "${INSTALLDIR}" "emerge-webrsync"
+    chrootCmd "${INSTALLDIR}" "emerge --sync || emerge-webrsync"
 
     # Select profile
     setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
