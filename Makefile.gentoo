@@ -75,7 +75,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 		sudo mount --rbind /dev "$(CHROOT_DIR)/dev";\
 	fi
 
-	@if [ "$(shell stat -f -c '%T' ${INSTALLDIR}/dev/shm 2>/dev/null)" != tmpfs ]; then\
+	@if [ "$(shell stat -f -c '%T' ${CHROOT_DIR}/dev/shm 2>/dev/null)" != tmpfs ]; then\
 		echo "    --> sudo mount -t tmpfs shm $(CHROOT_DIR)/dev/shm";\
 		sudo mkdir -p "$(CHROOT_DIR)/dev/shm";\
 		sudo mount -t tmpfs shm "$(CHROOT_DIR)/dev/shm";\
