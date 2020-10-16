@@ -127,22 +127,24 @@ EOF
     if [ -n "${GENTOO_MIRROR}" ]; then
         GENTOO_MIRROR_KEY="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f2)"
         GENTOO_MIRROR="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f1)"
-        if [ -e "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
-            gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
-            wget -q -P "${CACHEDIR}" "${GENTOO_MIRROR}/${FLAVOR}"/Packages{,.gpgsig}
-            pushd "${CACHEDIR}" || exit 1
-            if ! gpg $GPG_OPTS --verify Packages.gpgsig Packages; then
-                echo "    --> Wrong signature for ${GENTOO_MIRROR}/${FLAVOR}/Packages"
-                exit 1
-            fi
-            popd
-            cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+        if [ -n "${GENTOO_MIRROR_KEY}" ]; then
+            if [ -e "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
+                gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
+                wget -q -P "${CACHEDIR}" "${GENTOO_MIRROR}/${FLAVOR}"/Packages{,.gpgsig}
+                pushd "${CACHEDIR}" || exit 1
+                if ! gpg $GPG_OPTS --verify Packages.gpgsig Packages; then
+                    echo "    --> Wrong signature for ${GENTOO_MIRROR}/${FLAVOR}/Packages"
+                    exit 1
+                fi
+                popd
+                cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
 FEATURES="\$FEATURES getbinpkg"
 PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
 EOF
-        else
-            echo "Cannot find key ${GENTOO_MIRROR_KEY}.asc in builder-gentoo."
-            exit 1
+            else
+                echo "Cannot find key ${GENTOO_MIRROR_KEY}.asc in builder-gentoo."
+                exit 1
+            fi
         fi
     fi
 
