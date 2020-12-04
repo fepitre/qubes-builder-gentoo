@@ -145,6 +145,12 @@ PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
 EOF
     fi
 
+    # Break circular dependencies
+    mkdir -p "${INSTALLDIR}/etc/portage/package.use"
+    cat >> "${INSTALLDIR}/etc/portage/package.use/python38" << EOF
+=dev-lang/python-3.8.6 -sqlite -bluetooth
+EOF
+
     # Install needed dependencies
     pkgs="fakeroot sudo lsb-release"
     chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} -n $pkgs"
