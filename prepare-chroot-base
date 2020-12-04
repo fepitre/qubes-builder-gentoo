@@ -114,9 +114,6 @@ EOF
     cp "${INSTALLDIR}/usr/share/portage/config/repos.conf" "${INSTALLDIR}/etc/portage/repos.conf/gentoo.conf"
     chrootCmd "${INSTALLDIR}" "emerge --sync -q || emerge-webrsync -q"
 
-    # Select profile
-    setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
-
     # Setup binary package mirror if requested
     # This is a fragile method as there no built-in Gentoo method
     # for verifying binary packages hosts. It serves only to check
@@ -147,8 +144,6 @@ FEATURES="\$FEATURES getbinpkg"
 PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
 EOF
     fi
-
-    # updateChroot "${INSTALLDIR}"
 
     # Install needed dependencies
     pkgs="fakeroot sudo lsb-release"
