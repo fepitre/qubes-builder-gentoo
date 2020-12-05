@@ -145,6 +145,15 @@ PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
 EOF
     fi
 
+    # Set default python targets in Portage conf
+    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+PYTHON_TARGETS="python3_8"
+PYTHON_SINGLE_TARGET="python3_8"
+EOF
+
+    # Select python3.8 as python3 default profile
+    echo python3.8 > "${INSTALLDIR}/etc/python-exec/python-exec.conf"
+
     # Break circular dependencies
     mkdir -p "${INSTALLDIR}/etc/portage/package.use"
     cat >> "${INSTALLDIR}/etc/portage/package.use/python38" << EOF
