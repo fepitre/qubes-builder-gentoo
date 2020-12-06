@@ -17,3 +17,4 @@ after_script:
 variables:
   COMPONENTS: linux-template-builder
   VERBOSE: 0
+  GENTOO_MIRROR: https://mirror.notset.fr/gentoo/qubes
