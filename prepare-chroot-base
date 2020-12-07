@@ -10,7 +10,7 @@ fi
 
 INSTALLDIR="$1"
 DISTRO="$2"
-FLAVOR="$3"
+FLAVOR="${3:-gnome}"
 
 [ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
 mkdir -p "$CACHEDIR"
