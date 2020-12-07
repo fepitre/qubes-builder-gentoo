@@ -16,6 +16,9 @@ prepareChroot "${INSTALLDIR}"
 # Mount local cache as Portage binpkgs and distfiles
 mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
+# Select profile
+setPortageProfile "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
 
