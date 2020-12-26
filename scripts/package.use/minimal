@@ -6,3 +6,4 @@ media-libs/libglvnd X
 media-plugins/alsa-plugins pulseaudio
 app-text/xmlto text
 x11-libs/cairo X
+media-libs/freetype png
