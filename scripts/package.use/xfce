@@ -13,3 +13,6 @@ media-libs/libsdl2 -wayland
 
 # required by Thunderbird
 dev-db/sqlite secure-delete
+
+# required by XFCE
+dev-libs/libdbusmenu gtk3
