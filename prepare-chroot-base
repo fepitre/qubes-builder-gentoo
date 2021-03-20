@@ -141,7 +141,7 @@ EOF
         fi
         cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
 FEATURES="\$FEATURES getbinpkg"
-PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
+# PORTAGE_BINHOST="${GENTOO_MIRROR}/${FLAVOR}"
 EOF
     fi
 

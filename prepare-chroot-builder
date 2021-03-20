@@ -41,6 +41,16 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
 %wheel ALL=(ALL) NOPASSWD: ALL
 EOF
 
+    cp -r /home/user/.gnupg "${INSTALLDIR}/home/user/"
+    chrootCmd "${INSTALLDIR}" "chown -R user:user /home/user/.gnupg"
+    chrootCmd "${INSTALLDIR}" "chmod 700 /home/user/.gnupg"
+    cp "${SCRIPTSDIR}/../keys/10C8712330D9DCB045B592C2416E94671C79613B.asc" "${INSTALLDIR}/home/user/"
+    chrootCmd "${INSTALLDIR}" "mkdir -p /etc/portage/gnupg"
+    chrootCmd "${INSTALLDIR}" "GNUPGHOME=/etc/portage/gnupg gpg --import /home/user/10C8712330D9DCB045B592C2416E94671C79613B.asc"
+    chrootCmd "${INSTALLDIR}" "echo '10C8712330D9DCB045B592C2416E94671C79613B:6:' | GNUPGHOME=/etc/portage/gnupg gpg --import-ownertrust"
+    chrootCmd "${INSTALLDIR}" "GNUPGHOME=/etc/portage/gnupg gpg --check-trustdb"
+    chrootCmd "${INSTALLDIR}" "chmod -R 775 /etc/portage/gnupg"
+
     if ! [ -r "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo/.mnt ]; then
         mkdir -p "${BUILDER_REPO_DIR}" "${INSTALLDIR}"/tmp/qubes-packages-mirror-repo
         mount --bind "${BUILDER_REPO_DIR}" "${INSTALLDIR}/tmp/qubes-packages-mirror-repo"
@@ -55,6 +65,27 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${FLAVOR}"
+
+LNB="$(sed -n "\|EGIT_REPO_URI|=" "${INSTALLDIR}"/var/db/repos/gentoo/sys-apps/portage/portage-9999.ebuild)"
+sed -i "$LNB,$((LNB+1))d" "${INSTALLDIR}"/var/db/repos/gentoo/sys-apps/portage/portage-9999.ebuild
+sed -i "$LNB i EGIT_REPO_URI=\"https://github.com/RinCat/portage.git\"\nEGIT_BRANCH=\"gpkg\"" "${INSTALLDIR}"/var/db/repos/gentoo/sys-apps/portage/portage-9999.ebuild
+
+chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} --digest =sys-apps/portage-9999"
+
+if ! grep BINPKG_FORMAT "${INSTALLDIR}/etc/portage/make.conf"; then
+    cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
+#FEATURES="\$FEATURES binpkg-signing"
+FEATURES="\$FEATURES binpkg-request-signature"
+#BINPKG_GPG_SIGNING_COMMAND="flock /run/lock/binpkg-gpg.lock sudo -u user -- /usr/bin/gpg --detach-sign --armor --batch --yes --no-tty --digest-algo SHA256 --local-user 10C8712330D9DCB045B592C2416E94671C79613B"
+BINPKG_GPG_VERIFY_COMMAND="/usr/bin/sudo -u nobody -- /usr/bin/gpg --homedir=/etc/portage/gnupg --no-auto-check-trustdb --verify --batch --no-tty --status-fd 1 \"\\${SIGN_FILE}\" -"
+BINPKG_FORMAT="gpkg"
+
+FEATURES="\$FEATURES getbinpkg"
+PORTAGE_BINHOST=https://gentoo.notset.fr/repo/gpkg/
+EOF
+fi
+
+chrootCmd "${INSTALLDIR}" "mkdir -p /run/lock"
 
 # Qubes Gentoo flags
 setupQubesFlags "${INSTALLDIR}" "${FLAVOR}"

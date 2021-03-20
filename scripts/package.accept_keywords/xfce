@@ -12,3 +12,5 @@ dev-python/nautilus-python ~amd64
 # required for using Portage behind proxy
 sys-apps/portage ~amd64
 app-portage/gemato ~amd64
+
+~sys-apps/portage-9999 **
