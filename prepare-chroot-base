@@ -147,7 +147,7 @@ EOF
 
     # Set default python targets in Portage conf
     cat >> "${INSTALLDIR}/etc/portage/make.conf" << EOF
-PYTHON_TARGETS="python3_8 python3_9"
+PYTHON_TARGETS="python3_9"
 EOF
 
     # Select python3.9 as python3 default profile
@@ -157,6 +157,7 @@ EOF
     mkdir -p "${INSTALLDIR}/etc/portage/package.use"
     cat >> "${INSTALLDIR}/etc/portage/package.use/python39" << EOF
 >=dev-lang/python-3.9.0 -sqlite -bluetooth
+x11-base/xcb-proto -python_targets_python3_8
 EOF
 
     # Install needed dependencies
