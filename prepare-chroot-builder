@@ -65,9 +65,6 @@ setPortageProfile "${INSTALLDIR}" "${FLAVOR}"
 # Ensure chroot is up to date
 updateChroot "${INSTALLDIR}"
 
-# https://bugs.gentoo.org/734794
-chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} x11-libs/pixman"
-
 # Use provided pandoc-bin for local builds and continuous integration
 # New issue rised while reusing binpkgs provided for the CI
 # with pandoc dependencies: https://bugs.gentoo.org/738802

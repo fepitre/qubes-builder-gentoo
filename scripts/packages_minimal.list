@@ -10,3 +10,4 @@ net-misc/wget
 sys-apps/diffutils
 sys-apps/ethtool
 sys-apps/net-tools
+sys-block/parted

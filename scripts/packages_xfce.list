@@ -9,6 +9,7 @@ dev-vcs/git
 net-misc/wget
 sys-apps/diffutils
 sys-apps/ethtool
+sys-block/parted
 
 # Applications
 www-client/firefox
