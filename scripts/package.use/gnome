@@ -7,6 +7,7 @@ net-wireless/wpa_supplicant dbus
 # required by Gnome related packages
 */* ruby_targets_ruby27
 gnome-base/gnome-light -gnome-shell
+dev-libs/libgdata vala
 
 # required by Firefox
 media-libs/libvpx postproc
