@@ -160,6 +160,11 @@ EOF
 x11-base/xcb-proto -python_targets_python3_8
 EOF
 
+    # See https://forums.gentoo.org/viewtopic-p-8636878.html?sid=abbdb9e370551ba0e1c919fe08a6d5e0#8636878
+    chrootCmd "${INSTALLDIR}" 'USE="-truetype" emerge --oneshot freetype harfbuzz'
+    chrootCmd "${INSTALLDIR}" 'USE="truetype harfbuzz" emerge --oneshot freetype harfbuzz'
+    echo "media-libs/freetype harfbuzz" > "${INSTALLDIR}/etc/portage/package.use/freetype"
+
     # Install needed dependencies
     pkgs="fakeroot sudo lsb-release"
     chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} -n $pkgs"
