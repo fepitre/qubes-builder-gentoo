@@ -120,7 +120,7 @@ EOF
     # mirror owner before adding it into the system. Once added,
     # nothing will prevent emerging a package if the content
     # has changed since the first check.
-    # GENTOO_MIRROR=https://mirror.notset.fr/gentoo/qubes/gnome+9FA64B92F95E706BF28E2CA6484010B5CDC576E2
+    # GENTOO_MIRROR=https://gentoo.notset.fr/repo/qubes/gnome+9FA64B92F95E706BF28E2CA6484010B5CDC576E2
     if [ -n "${GENTOO_MIRROR}" ]; then
         GENTOO_MIRROR_KEY="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f2)"
         GENTOO_MIRROR="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f1)"
