@@ -17,7 +17,7 @@ prepareChroot "${INSTALLDIR}"
 mountCache "${CACHEDIR}" "${INSTALLDIR}"
 
 # Add Qubes Overlay
-setupQubesOverlay "${INSTALLDIR}"
+setupQubesOverlay "${INSTALLDIR}" "${RELEASE}"
 
 # Qubes Gentoo flags
 setupQubesFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
