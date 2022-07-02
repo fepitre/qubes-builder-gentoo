@@ -12,6 +12,7 @@ dev-libs/libgdata vala
 # required by Firefox
 media-libs/libvpx postproc
 media-libs/libsdl2 -wayland
+media-libs/libsndfile minimal
 
 # required by Thunderbird
 dev-db/sqlite secure-delete
