@@ -142,6 +142,7 @@ setupQubesFlags() {
 
 setupQubesOverlay() {
     CHROOTDIR="$1"
+    RELEASE="$2"
     rm -rf "${CHROOTDIR}/var/db/repos/qubes"
     mkdir -p "${CHROOTDIR}/var/db/repos/qubes"
     cat > "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
@@ -154,6 +155,9 @@ sync-openpgp-key-path = /usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5
 sync-openpgp-key-refresh = false
 auto-sync = yes
 EOF
+    if [ -n "$RELEASE" ] && [[ $RELEASE =~ ^[1-9]+\.[0-9]+$ ]]; then
+        echo "sync-git-clone-extra-opts = --branch release$RELEASE" >> "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf"
+    fi
 
     # Add @fepitre's key
     cp "${SCRIPTSDIR}/../keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc" "${CHROOTDIR}/usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc"

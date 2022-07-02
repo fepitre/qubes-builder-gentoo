@@ -44,15 +44,15 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
 
         # Download the stage3
         echo "  --> Downloading Gentoo $DISTRO stage3..."
-        wget -q -N -P "${STAGE_DIR}" "${STAGE_URL}"{,.DIGESTS.asc}
+        wget -q -N -P "${STAGE_DIR}" "${STAGE_URL}"{,.DIGESTS}
 
         echo "  --> Verifying Gentoo $DISTRO stage3..."
         pushd "$STAGE_DIR" || exit 1
-        if ! gpg $GPG_OPTS --verify "$STAGE_FILE.DIGESTS.asc"; then
+        if ! gpg $GPG_OPTS --verify "$STAGE_FILE.DIGESTS"; then
             echo "    --> Wrong signature for $STAGE_FILE"
             exit 1
         fi
-        if ! awk '/SHA512 HASH/{getline;print}' "$STAGE_FILE.DIGESTS.asc" | sed '/CONTENTS/d' | sha512sum -c; then
+        if ! awk '/SHA512 HASH/{getline;print}' "$STAGE_FILE.DIGESTS" | sed '/CONTENTS/d' | sha512sum -c; then
             echo "    --> Wrong checksum for $STAGE_FILE"
             exit 1
         fi
