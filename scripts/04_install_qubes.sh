@@ -19,6 +19,9 @@ mountCache "${CACHEDIR}" "${INSTALLDIR}"
 # Add Qubes Overlay
 setupQubesOverlay "${INSTALLDIR}" "${RELEASE}"
 
+# Standard Gentoo flags: updates base root image flags
+setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+
 # Qubes Gentoo flags
 setupQubesFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
 
