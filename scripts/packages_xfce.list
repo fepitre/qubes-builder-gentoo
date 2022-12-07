@@ -1,5 +1,8 @@
 # X
-x11-base/xorg-x11
+x11-apps/xprop
+x11-apps/xsetroot
+x11-apps/xrandr
+x11-apps/setxkbmap
 x11-terms/xterm
 
 # Basic utils
