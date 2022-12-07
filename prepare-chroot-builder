@@ -37,6 +37,8 @@ if ! [ -d "${INSTALLDIR}/home/user" ]; then
     /usr/sbin/chroot "$INSTALLDIR" /bin/bash -c \
         "useradd -g user -G wheel $USER_OPTS -m user; su -c 'mkdir qubes-src' - user"
 
+    mkdir -p "${INSTALLDIR}/etc/sudoers.d"
+
     cat > "${INSTALLDIR}/etc/sudoers.d/qubes-builder-user" <<EOF
 %wheel ALL=(ALL) NOPASSWD: ALL
 EOF
