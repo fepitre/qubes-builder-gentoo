@@ -157,5 +157,8 @@ EOF
     # Use app-alternatives
     chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} app-alternatives/{awk,bc,bzip2,cpio,gzip,lex,sh,tar,yacc}"
 
+    # Workaround for issue with building sys-apps/groff due to automake version
+    echo 'sys-apps/groff' > "${INSTALLDIR}"/etc/portage/package.mask/standard
+
     touch "${INSTALLDIR}/etc/.prepared_base"
 fi
