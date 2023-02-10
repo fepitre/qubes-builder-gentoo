@@ -9,7 +9,7 @@ include:
 default:
   tags:
     - vm
-    - long-living-job
+    - notset
 
 after_script:
   - ls -l ~/qubes-builder/qubes-src/linux-template-builder/rpm/noarch
