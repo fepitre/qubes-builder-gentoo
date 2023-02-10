@@ -154,5 +154,8 @@ EOF
     pkgs="fakeroot sudo lsb-release"
     chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} -n $pkgs"
 
+    # Use app-alternatives
+    chrootCmd "${INSTALLDIR}" "emerge ${EMERGE_OPTS} app-alternatives/{awk,bc,bzip2,cpio,gzip,lex,sh,tar,yacc}"
+
     touch "${INSTALLDIR}/etc/.prepared_base"
 fi
