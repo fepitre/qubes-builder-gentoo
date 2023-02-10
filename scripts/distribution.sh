@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EMERGE_OPTS="-b -k --keep-going=y -n"
+EMERGE_OPTS="-b -k -n"
 
 prepareChroot() {
     CHROOTDIR="$1"
