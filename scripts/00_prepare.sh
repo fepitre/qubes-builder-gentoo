@@ -3,6 +3,6 @@
 
 echo "--> Gentoo 00_prepare.sh"
 
-if [ "$VERBOSE" -ge 2 ] || [ "$DEBUG" -gt 0 ]; then
+if [ "0$VERBOSE" -ge 2 ] || [ "0$DEBUG" -gt 0 ]; then
     set -x
 fi
