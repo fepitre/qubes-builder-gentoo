@@ -51,12 +51,11 @@ mountCache() {
     mkdir -p "${CACHEDIR}/distfiles"
     mkdir -p "${CACHEDIR}/binpkgs"
 
-    if mountpoint -q "${CHROOTDIR}/var/cache/distfiles"; then
-        umount "${CHROOTDIR}/var/cache/distfiles"
-    fi
-    if mountpoint -q "${CHROOTDIR}/var/cache/binpkgs"; then
-        umount "${CHROOTDIR}/var/cache/binpkgs"
-    fi
+    mount
+
+    umount "${CHROOTDIR}/var/cache/distfiles" || true
+    umount "${CHROOTDIR}/var/cache/binpkgs" || true
+
     mount --bind "${CACHEDIR}/distfiles" "${CHROOTDIR}/var/cache/distfiles"
     mount --bind "${CACHEDIR}/binpkgs" "${CHROOTDIR}/var/cache/binpkgs"
 
