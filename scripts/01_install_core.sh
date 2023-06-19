@@ -7,4 +7,4 @@ if [ "0$VERBOSE" -ge 2 ] || [ "0$DEBUG" -gt 0 ]; then
     set -x
 fi
 
-"${SCRIPTSDIR}/../prepare-chroot-base" "$INSTALLDIR" "$DIST" "$TEMPLATE_FLAVOR"
+"${TEMPLATE_CONTENT_DIR}/../prepare-chroot-base" "${INSTALL_DIR}" "$DIST" "${TEMPLATE_FLAVOR}"

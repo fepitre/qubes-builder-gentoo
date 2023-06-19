@@ -2,67 +2,71 @@
 
 EMERGE_OPTS="-b -k -n"
 
-prepareChroot() {
-    CHROOTDIR="$1"
+if [ "0${IS_LEGACY_BUILDER}" -eq 1 ]; then
+    TEMPLATE_SCRIPTS_DIR="$(readlink -f .)"
+fi
 
-    if [ ! -r "${CHROOTDIR}/dev/zero" ]; then
-        mkdir -p "${CHROOTDIR}/dev"
-        sudo mount --rbind /dev "${CHROOTDIR}/dev"
+prepareChroot() {
+    CHROOT_DIR="$1"
+
+    if [ ! -r "${CHROOT_DIR}/dev/zero" ]; then
+        mkdir -p "${CHROOT_DIR}/dev"
+        sudo mount --rbind /dev "${CHROOT_DIR}/dev"
     fi
-    if [ "$(stat -f -c '%T' ${CHROOTDIR}/dev/shm 2>/dev/null)" != "tmpfs" ]; then
-        mkdir -p "${CHROOTDIR}/dev/shm"
-        sudo mount -t tmpfs shm "${CHROOTDIR}/dev/shm"
-        sudo chmod 1777 "${CHROOTDIR}/dev/shm"
+    if [ "$(stat -f -c '%T' "${CHROOT_DIR}/dev/shm" 2>/dev/null)" != "tmpfs" ]; then
+        mkdir -p "${CHROOT_DIR}/dev/shm"
+        sudo mount -t tmpfs shm "${CHROOT_DIR}/dev/shm"
+        sudo chmod 1777 "${CHROOT_DIR}/dev/shm"
     fi
-    if [ ! -r "${CHROOTDIR}/proc/cpuinfo" ]; then
-        mkdir -p "${CHROOTDIR}/proc"
-        sudo mount -t proc proc "${CHROOTDIR}/proc"
+    if [ ! -r "${CHROOT_DIR}/proc/cpuinfo" ]; then
+        mkdir -p "${CHROOT_DIR}/proc"
+        sudo mount -t proc proc "${CHROOT_DIR}/proc"
     fi
-    if [ ! -d "${CHROOTDIR}/sys/dev" ]; then\
-        mkdir -p "${CHROOTDIR}/sys"
-        sudo mount --bind /sys "${CHROOTDIR}/sys"
+    if [ ! -d "${CHROOT_DIR}/sys/dev" ]; then\
+        mkdir -p "${CHROOT_DIR}/sys"
+        sudo mount --bind /sys "${CHROOT_DIR}/sys"
     fi
-    cp /etc/resolv.conf "${CHROOTDIR}/etc/resolv.conf"
+    cp /etc/resolv.conf "${CHROOT_DIR}/etc/resolv.conf"
 }
 
 chrootCmd() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     shift
     CMD="$*"
 
-    /usr/sbin/chroot "${CHROOTDIR}" env -i /bin/bash -l -c "env-update"
-    /usr/sbin/chroot "${CHROOTDIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
+    /usr/sbin/chroot "${CHROOT_DIR}" env -i /bin/bash -l -c "env-update"
+    /usr/sbin/chroot "${CHROOT_DIR}" env -i /bin/bash -l -c "source /etc/profile && $CMD"
 }
 
 updateChroot() {
-    CHROOTDIR="$1"
-    chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
+    CHROOT_DIR="$1"
+    chrootCmd "${CHROOT_DIR}" "emerge ${EMERGE_OPTS} --update --deep --newuse --changed-use --with-bdeps=y @world"
 }
 
 updatePortage() {
-    CHROOTDIR="$1"
-    chrootCmd "${INSTALLDIR}" 'emerge -b -k --update portage'
+    CHROOT_DIR="$1"
+    chrootCmd "${INSTALL_DIR}" 'emerge -b -k --update portage'
 }
 
 mountCache() {
-    CACHEDIR="$1"
-    CHROOTDIR="$2"
+    CACHE_DIR="$1"
+    CHROOT_DIR="$2"
 
-    mkdir -p "${CACHEDIR}/distfiles"
-    mkdir -p "${CACHEDIR}/binpkgs"
+    mkdir -p "${CACHE_DIR}/distfiles"
+    mkdir -p "${CACHE_DIR}/binpkgs"
 
     mount
 
-    umount "${CHROOTDIR}/var/cache/distfiles" || true
-    umount "${CHROOTDIR}/var/cache/binpkgs" || true
+    umount "${CHROOT_DIR}/var/cache/distfiles" || true
+    umount "${CHROOT_DIR}/var/cache/binpkgs" || true
 
-    mount --bind "${CACHEDIR}/distfiles" "${CHROOTDIR}/var/cache/distfiles"
-    mount --bind "${CACHEDIR}/binpkgs" "${CHROOTDIR}/var/cache/binpkgs"
+    mount --bind "${CACHE_DIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles"
+    mount --bind "${CACHE_DIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs"
 
-    chrootCmd "${CHROOTDIR}" 'chmod 755 /var/cache/binpkgs'
-    chrootCmd "${CHROOTDIR}" 'chmod 755 /var/cache/distfiles'
-    chrootCmd "${CHROOTDIR}" 'chown -R portage:portage /var/cache/binpkgs'
-    chrootCmd "${CHROOTDIR}" 'chown -R portage:portage /var/cache/distfiles'
+    chrootCmd "${CHROOT_DIR}" 'chmod 755 /var/cache/binpkgs'
+    chrootCmd "${CHROOT_DIR}" 'chmod 755 /var/cache/distfiles'
+    chrootCmd "${CHROOT_DIR}" 'chown -R portage:portage /var/cache/binpkgs'
+    chrootCmd "${CHROOT_DIR}" 'chown -R portage:portage /var/cache/distfiles'
 }
 
 getFile() {
@@ -81,7 +85,7 @@ getPackagesList() {
     FLAVOR="$2"
 
     # Strip comments, then convert newlines to single spaces
-    FILE="$(getFile "${SCRIPTSDIR}" "$PREFIX" ".list" "${FLAVOR}")"
+    FILE="$(getFile "${TEMPLATE_CONTENT_DIR}" "$PREFIX" ".list" "${FLAVOR}")"
     if [ ! -e "$FILE" ]; then
         echo "Cannot find '$FILE'!"
         exit 1
@@ -105,46 +109,46 @@ getBaseFlags() {
     FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
-    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "" "${FLAVOR}"
+    getFile "${TEMPLATE_CONTENT_DIR}/package.$FLAGS/" "" "" "${FLAVOR}"
 }
 
 getQubesFlags() {
     FLAVOR="${1:-gnome}"
     FLAGS="$2"
 
-    getFile "${SCRIPTSDIR}/package.$FLAGS/" "" "-qubes" "${FLAVOR}"
+    getFile "${TEMPLATE_CONTENT_DIR}/package.$FLAGS/" "" "-qubes" "${FLAVOR}"
 }
 
 setupBaseFlags() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     FLAVOR="${2:-gnome}"
     for flag in use mask accept_keywords
     do
         if [ -e "$(getBaseFlags "$FLAVOR" "$flag")" ]; then
-            mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
-            cp "$(getBaseFlags "$FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/standard"
+            mkdir -p "${CHROOT_DIR}/etc/portage/package.$flag"
+            cp "$(getBaseFlags "$FLAVOR" "$flag")" "${CHROOT_DIR}/etc/portage/package.$flag/standard"
         fi
     done
 }
 
 setupQubesFlags() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     FLAVOR="${2:-gnome}"
     for flag in use mask accept_keywords
     do
         if [ -e "$(getQubesFlags "$FLAVOR" "$flag")" ]; then
-            mkdir -p "${CHROOTDIR}/etc/portage/package.$flag"
-            cp "$(getQubesFlags "$FLAVOR" "$flag")" "${CHROOTDIR}/etc/portage/package.$flag/qubes"
+            mkdir -p "${CHROOT_DIR}/etc/portage/package.$flag"
+            cp "$(getQubesFlags "$FLAVOR" "$flag")" "${CHROOT_DIR}/etc/portage/package.$flag/qubes"
         fi
     done
 }
 
 setupQubesOverlay() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     RELEASE="$2"
-    rm -rf "${CHROOTDIR}/var/db/repos/qubes"
-    mkdir -p "${CHROOTDIR}/var/db/repos/qubes"
-    cat > "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf" <<EOF
+    rm -rf "${CHROOT_DIR}/var/db/repos/qubes"
+    mkdir -p "${CHROOT_DIR}/var/db/repos/qubes"
+    cat > "${CHROOT_DIR}/etc/portage/repos.conf/qubes.conf" <<EOF
 [qubes]
 location = /var/db/repos/qubes
 sync-uri = https://github.com/fepitre/qubes-gentoo.git
@@ -155,48 +159,48 @@ sync-openpgp-key-refresh = false
 auto-sync = yes
 EOF
     if [ -n "$RELEASE" ] && [[ $RELEASE =~ ^[1-9]+\.[0-9]+$ ]]; then
-        echo "sync-git-clone-extra-opts = --branch release$RELEASE" >> "${CHROOTDIR}/etc/portage/repos.conf/qubes.conf"
+        echo "sync-git-clone-extra-opts = --branch release$RELEASE" >> "${CHROOT_DIR}/etc/portage/repos.conf/qubes.conf"
     fi
 
     # Add @fepitre's key
-    cp "${SCRIPTSDIR}/../keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc" "${CHROOTDIR}/usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc"
+    cp "${TEMPLATE_CONTENT_DIR}/../keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc" "${CHROOT_DIR}/usr/share/openpgp-keys/9FA64B92F95E706BF28E2CA6484010B5CDC576E2.asc"
 
     # Add Qubes overlay
-    chrootCmd "${CHROOTDIR}" "emaint sync -r qubes"
+    chrootCmd "${CHROOT_DIR}" "emaint sync -r qubes"
 }
 
 installBasePackages() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     FLAVOR="${2:-gnome}"
 
     PACKAGES="$(getBasePackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Gentoo packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOT_DIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
     fi
 }
 
 installQubesPackages() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     FLAVOR="${2:-gnome}"
 
     PACKAGES="$(getQubesPackagesList "$FLAVOR")"
     if [ -n "${PACKAGES}" ]; then
         echo "  --> Installing Qubes packages..."
         echo "    --> Selected packages: ${PACKAGES}"
-        chrootCmd "${CHROOTDIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
+        chrootCmd "${CHROOT_DIR}" "emerge ${EMERGE_OPTS} ${PACKAGES}"
     fi
 }
 
 setPortageProfile() {
-    CHROOTDIR="$1"
+    CHROOT_DIR="$1"
     FLAVOR="${2:-gnome}"
     if [ "$FLAVOR" == "xfce" ] || [ "$FLAVOR" == "gnome" ]; then
         # Select desktop/gnome/systemd profile
-        chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
+        chrootCmd "${CHROOT_DIR}" "eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd"
     else
         # Select default systemd profile
-        chrootCmd "${CHROOTDIR}" "eselect profile set default/linux/amd64/17.1/systemd"
+        chrootCmd "${CHROOT_DIR}" "eselect profile set default/linux/amd64/17.1/systemd"
     fi
 }

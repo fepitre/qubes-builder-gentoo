@@ -8,25 +8,25 @@ if [ "0$VERBOSE" -ge 2 ] || [ "0$DEBUG" -gt 0 ]; then
 fi
 
 # shellcheck source=scripts/distribution.sh
-. ${SCRIPTSDIR}/distribution.sh
+. ${TEMPLATE_CONTENT_DIR}/distribution.sh
 
 # Mount dev/proc/sys
-prepareChroot "${INSTALLDIR}"
+prepareChroot "${INSTALL_DIR}"
 
 # Mount local cache as Portage binpkgs and distfiles
-mountCache "${CACHEDIR}" "${INSTALLDIR}"
+mountCache "${CACHE_DIR}" "${INSTALL_DIR}"
 
 # Add Qubes Overlay
-setupQubesOverlay "${INSTALLDIR}" "${RELEASE}"
+setupQubesOverlay "${INSTALL_DIR}" "${RELEASE}"
 
 # Standard Gentoo flags: updates base root image flags
-setupBaseFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+setupBaseFlags "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"
 
 # Qubes Gentoo flags
-setupQubesFlags "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+setupQubesFlags "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"
 
 # Ensure chroot is up to date
-updateChroot "${INSTALLDIR}"
+updateChroot "${INSTALL_DIR}"
 
 # Qubes specific packages to install
-installQubesPackages "${INSTALLDIR}" "${TEMPLATE_FLAVOR}"
+installQubesPackages "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"

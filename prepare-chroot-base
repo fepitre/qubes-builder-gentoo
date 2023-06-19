@@ -12,24 +12,24 @@ INSTALLDIR="$1"
 DISTRO="$2"
 FLAVOR="${3:-gnome}"
 
-[ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
-mkdir -p "$CACHEDIR"
+[ -z "${CACHE_DIR}" ] && CACHE_DIR="/tmp"
+mkdir -p "${CACHE_DIR}"
 
-GPG_KEYRING="$(readlink -f ${CACHEDIR}/gentoo-trustedkeys.gpg)"
+GPG_KEYRING="$(readlink -f ${CACHE_DIR}/gentoo-trustedkeys.gpg)"
 GPG_OPTS="--no-default-keyring --keyring $GPG_KEYRING"
 
 # shellcheck source=scripts/distribution.sh
-. ${SCRIPTSDIR}/distribution.sh
+. ${TEMPLATE_CONTENT_DIR}/distribution.sh
 
 if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
     STAGE_FLAVOR="latest-stage3-amd64-systemd"
     GENTOO_DISTFILES="${GENTOO_DISTFILES:-http://distfiles.gentoo.org}"
 
-    STAGE_DIR="${CACHEDIR}/stage"
-    PORTAGE_DIR="${CACHEDIR}/portage"
+    STAGE_DIR="${CACHE_DIR}/stage"
+    PORTAGE_DIR="${CACHE_DIR}/portage"
 
     echo "  --> Importing Gentoo keys..."
-    gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/gentoo-release.asc.20200704"
+    gpg $GPG_OPTS --import "${TEMPLATE_CONTENT_DIR}/../keys/gentoo-release.asc.20200704"
 
     ## STAGE3
     if ! [ -f "${INSTALLDIR}/etc/.extracted_stage3" ]; then
@@ -106,7 +106,7 @@ EOF
     fi
 
     prepareChroot "${INSTALLDIR}"
-    mountCache "${CACHEDIR}" "${INSTALLDIR}"
+    mountCache "${CACHE_DIR}" "${INSTALLDIR}"
 
     # Prepare and sync Gentoo overlay
     mkdir -p "${INSTALLDIR}/var/db/repos/gentoo"
@@ -125,10 +125,10 @@ EOF
         GENTOO_MIRROR_KEY="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f2)"
         GENTOO_MIRROR="$(echo "${GENTOO_MIRROR}"+ | cut -d '+' -f1)"
         if [ -n "${GENTOO_MIRROR_KEY}" ]; then
-            if [ -e "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
-                gpg $GPG_OPTS --import "${SCRIPTSDIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
-                wget -q -P "${CACHEDIR}" "${GENTOO_MIRROR}/${FLAVOR}"/Packages{,.gpgsig}
-                pushd "${CACHEDIR}" || exit 1
+            if [ -e "${TEMPLATE_CONTENT_DIR}/../keys/${GENTOO_MIRROR_KEY}.asc" ]; then
+                gpg $GPG_OPTS --import "${TEMPLATE_CONTENT_DIR}/../keys/${GENTOO_MIRROR_KEY}.asc"
+                wget -q -P "${CACHE_DIR}" "${GENTOO_MIRROR}/${FLAVOR}"/Packages{,.gpgsig}
+                pushd "${CACHE_DIR}" || exit 1
                 if ! gpg $GPG_OPTS --verify Packages.gpgsig Packages; then
                     echo "    --> Wrong signature for ${GENTOO_MIRROR}/${FLAVOR}/Packages"
                     exit 1

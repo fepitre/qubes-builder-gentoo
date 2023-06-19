@@ -12,13 +12,13 @@ INSTALLDIR="$1"
 DISTRO="$2"
 FLAVOR="${3:-gnome}"
 
-[ -z "$CACHEDIR" ] && CACHEDIR="/tmp"
+[ -z "${CACHE_DIR}" ] && CACHE_DIR="/tmp"
 
-SCRIPTSDIR=${GENTOO_PLUGIN_DIR}scripts
-export INSTALLDIR SCRIPTSDIR
+TEMPLATE_CONTENT_DIR=${GENTOO_PLUGIN_DIR}scripts
+export INSTALLDIR TEMPLATE_CONTENT_DIR
 
 # shellcheck source=scripts/distribution.sh
-. ${SCRIPTSDIR}/distribution.sh
+. ${TEMPLATE_CONTENT_DIR}/distribution.sh
 
 if ! [ -d "${INSTALLDIR}/home/user" ]; then
     mkdir -p "$INSTALLDIR"
@@ -53,7 +53,7 @@ fi
 prepareChroot "${INSTALLDIR}"
 
 # Mount local cache as Portage binpkgs and distfiles
-mountCache "${CACHEDIR}" "${INSTALLDIR}"
+mountCache "${CACHE_DIR}" "${INSTALLDIR}"
 
 # Standard Gentoo flags
 setupBaseFlags "${INSTALLDIR}" "${FLAVOR}"

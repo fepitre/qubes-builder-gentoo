@@ -8,24 +8,24 @@ if [ "0$VERBOSE" -ge 2 ] || [ "0$DEBUG" -gt 0 ]; then
 fi
 
 # shellcheck source=scripts/distribution.sh
-. ${SCRIPTSDIR}/distribution.sh
+. ${TEMPLATE_CONTENT_DIR}/distribution.sh
 
 echo " --> Cleaning..."
-echo '# This file intentionally left blank' > "${INSTALLDIR}/etc/resolv.conf"
+echo '# This file intentionally left blank' > "${INSTALL_DIR}/etc/resolv.conf"
 
-rm -f "${INSTALLDIR}/etc/.prepared_base"
-rm -f "${INSTALLDIR}/etc/.extracted_stage3"
-rm -f "${INSTALLDIR}/etc/.extracted_portage"
+rm -f "${INSTALL_DIR}/etc/.prepared_base"
+rm -f "${INSTALL_DIR}/etc/.extracted_stage3"
+rm -f "${INSTALL_DIR}/etc/.extracted_portage"
 
-umount "${INSTALLDIR}/var/cache/binpkgs" || true
-umount "${INSTALLDIR}/var/cache/distfiles" || true
+umount "${INSTALL_DIR}/var/cache/binpkgs" || true
+umount "${INSTALL_DIR}/var/cache/distfiles" || true
 
 # If exists, remove PORTAGE_BINHOST and use of binpkg
-sed -i "/PORTAGE_BINHOST=/d" "${INSTALLDIR}/etc/portage/make.conf"
-sed -i '/FEATURES="$FEATURES getbinpkg"/d' "${INSTALLDIR}/etc/portage/make.conf"
+sed -i "/PORTAGE_BINHOST=/d" "${INSTALL_DIR}/etc/portage/make.conf"
+sed -i '/FEATURES="$FEATURES getbinpkg"/d' "${INSTALL_DIR}/etc/portage/make.conf"
 
 echo " --> Fix permissions"
-chrootCmd "${INSTALLDIR}" 'chmod 755 /var/cache/binpkgs'
-chrootCmd "${INSTALLDIR}" 'chmod 755 /var/cache/distfiles'
-chrootCmd "${INSTALLDIR}" 'chown portage:portage /var/cache/binpkgs'
-chrootCmd "${INSTALLDIR}" 'chown portage:portage /var/cache/distfiles'
+chrootCmd "${INSTALL_DIR}" 'chmod 755 /var/cache/binpkgs'
+chrootCmd "${INSTALL_DIR}" 'chmod 755 /var/cache/distfiles'
+chrootCmd "${INSTALL_DIR}" 'chown portage:portage /var/cache/binpkgs'
+chrootCmd "${INSTALL_DIR}" 'chown portage:portage /var/cache/distfiles'

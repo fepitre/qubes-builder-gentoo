@@ -31,8 +31,8 @@ ifneq ($(DEBUG),0)
   $(info ║ Repo Variables)
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
   $(info ║ SRC_DIR:               $(SRC_DIR))                # qubes-src
-  $(info ║ VERSION:               $(PV))                     # 
-  $(info ║ RELEASE:               $(PR))                     # 
+  $(info ║ VERSION:               $(PV))                     #
+  $(info ║ RELEASE:               $(PR))                     #
   $(info ║ CHROOT_DIR:            $(CHROOT_DIR))             # /home/user/qubes-builder/chroot-gentoo
   $(info ║ BUILDER_REPO_DIR:      $(BUILDER_REPO_DIR))       # /home/user/qubes-builder/qubes-packages-mirror-repo/vm-gentoo
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
@@ -45,7 +45,7 @@ ifneq ($(DEBUG),0)
   $(info ║ Build Variables)
   $(info ╠───────────────────────────────────────────────────────────────────────────────)
   $(info ║ GENTOO_PLUGIN_DIR:     $(GENTOO_PLUGIN_DIR))      # /home/user/qubes-builder/qubes-src/builder-gentoo
-  $(info ║ CACHEDIR:              $(CACHEDIR))               # cache/gentoo
+  $(info ║ CACHE_DIR:              $(CACHE_DIR))               # cache/gentoo
   $(info ║ PACKAGE_LIST:          $(PACKAGE_LIST))           # gentoo
   $(info ║ DISTRIBUTION:          $(DISTRIBUTION))           # gentoo
   $(info ║ DIST:                  $(DIST))                   #
@@ -94,22 +94,22 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 		sudo mount --bind /sys "$(CHROOT_DIR)/sys";\
 	fi
 
-	@sudo mkdir -p "$(CACHEDIR)/distfiles"
-	@sudo touch "$(CACHEDIR)/distfiles/.mnt"
+	@sudo mkdir -p "$(CACHE_DIR)/distfiles"
+	@sudo touch "$(CACHE_DIR)/distfiles/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/var/cache/distfiles/.mnt" ]; then\
-		echo "    --> mount --bind ${CACHEDIR}/distfiles ${CHROOT_DIR}/var/cache/distfiles"; \
+		echo "    --> mount --bind ${CACHE_DIR}/distfiles ${CHROOT_DIR}/var/cache/distfiles"; \
 		sudo mkdir -p "$(CHROOT_DIR)/var/cache/distfiles";\
-		sudo mount --bind "${CACHEDIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";\
+		sudo mount --bind "${CACHE_DIR}/distfiles" "${CHROOT_DIR}/var/cache/distfiles";\
 	fi
-	
-	@sudo mkdir -p "$(CACHEDIR)/binpkgs"
-	@sudo touch "$(CACHEDIR)/binpkgs/.mnt"
+
+	@sudo mkdir -p "$(CACHE_DIR)/binpkgs"
+	@sudo touch "$(CACHE_DIR)/binpkgs/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/var/cache/binpkgs/.mnt" ]; then\
-		echo "    --> mount --bind ${CACHEDIR}/binpkgs ${CHROOT_DIR}/var/cache/binpkgs"; \
+		echo "    --> mount --bind ${CACHE_DIR}/binpkgs ${CHROOT_DIR}/var/cache/binpkgs"; \
 		sudo mkdir -p "$(CHROOT_DIR)/var/cache/binpkgs";\
-		sudo mount --bind "${CACHEDIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs";\
+		sudo mount --bind "${CACHE_DIR}/binpkgs" "${CHROOT_DIR}/var/cache/binpkgs";\
 	fi
-	
+
 	@sudo mkdir -p "$(BUILDER_REPO_DIR)"
 	@sudo touch "$(BUILDER_REPO_DIR)/.mnt"
 	@if ! [ -r "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo/.mnt" ]; then\
@@ -117,7 +117,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 		sudo mkdir -p "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
 		sudo mount --bind "$(BUILDER_REPO_DIR)" "$(CHROOT_DIR)/tmp/qubes-packages-mirror-repo";\
 	fi
-	
+
 	@echo "  --> Synchronize resolv.conf"
 	@sudo cp /etc/resolv.conf "$(CHROOT_DIR)/etc/resolv.conf"
 
