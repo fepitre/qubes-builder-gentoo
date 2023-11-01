@@ -39,7 +39,7 @@ if ! [ -f "${INSTALLDIR}/etc/.prepared_base" ]; then
 
         # Extract stage3 URL and name
         STAGE_BASEURL="${GENTOO_DISTFILES}/releases/amd64/autobuilds"
-        STAGE_URL="${STAGE_BASEURL}/$(sed -n '3p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
+        STAGE_URL="${STAGE_BASEURL}/$(sed -n '6p' ${STAGE_DIR}/${STAGE_FLAVOR}.txt | awk '{print $1}')"
         STAGE_FILE="$(basename "${STAGE_URL}")"
 
         # Download the stage3

@@ -1,14 +1,1 @@
 app-emulation/xen-tools ~amd64
-
-# required for pandoc
-dev-haskell/* ~amd64
-app-admin/haskell-updater ~amd64
-dev-lang/ghc ~amd64
-app-text/pandoc ~amd64
-
-# required for app-linux-img-converter
-dev-python/nautilus-python ~amd64
-
-# required for using Portage behind proxy
-sys-apps/portage ~amd64
-app-portage/gemato ~amd64

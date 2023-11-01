@@ -22,20 +22,11 @@ setPortageProfile "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"
 # Standard Gentoo flags
 setupBaseFlags "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"
 
-# Ensure to upgrade to python3.10
-cat > "${INSTALL_DIR}/etc/portage/package.use/python3.10" << EOF
-*/* PYTHON_TARGETS: -* python3_10
-*/* PYTHON_SINGLE_TARGET: -* python3_10
-EOF
-
 # Update Portage
 updatePortage "${INSTALL_DIR}"
 
 # Ensure chroot is up to date
 updateChroot "${INSTALL_DIR}"
-
-# Once update is finished with forced python3.10 upgrade remote USE file
-rm "${INSTALL_DIR}/etc/portage/package.use/python3.10"
 
 # Standard Gentoo packages to install
 installBasePackages "${INSTALL_DIR}" "${TEMPLATE_FLAVOR}"
